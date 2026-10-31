@@ -371,8 +371,8 @@ class LoginDialog(QDialog):
         if not user:
             self.status.setText("Unknown username.")
             return
-        hashed = hashlib.sha256(password.encode()).hexdigest()
-        if hashed != user.get("password_hash", ""):
+        stored = user.get("password", user.get("password_hash", ""))
+        if password != stored:
             self.status.setText("Incorrect password.")
             return
         self.user = user

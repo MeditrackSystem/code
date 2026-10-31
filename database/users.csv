@@ -1,8 +1,8 @@
-id,employee_id,name,username,password_hash,role,status
-1,U001,System Administrator,admin,240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9,Administrator,Active
-2,U002,Dr. Maria Santos,maria.santos,5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8,Doctor,Active
-3,U003,Dr. John Lee,john.lee,5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8,Doctor,Active
-4,U004,Nurse Joy Reyes,nurse.joy,5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8,Nurse,Active
-5,U005,Nurse Anna Cruz,anna.cruz,5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8,Nurse,Active
-6,U006,Pharmacist Leo Tan,leo.tan,5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8,Pharmacist,Active
-7,U007,Read-Only Staff,staff.readonly,5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8,Read-only staff,Active
+id,employee_id,name,username,password,role,status
+1,U001,System Administrator,admin,admin123,Administrator,Active
+2,U002,Dr. Maria Santos,maria.santos,password,Doctor,Active
+3,U003,Dr. John Lee,john.lee,password,Doctor,Active
+4,U004,Nurse Joy Reyes,nurse.joy,password,Nurse,Active
+5,U005,Nurse Anna Cruz,anna.cruz,password,Nurse,Active
+6,U006,Pharmacist Leo Tan,leo.tan,password,Pharmacist,Active
+7,U007,Read-Only Staff,staff.readonly,password,Read-only staff,Active
