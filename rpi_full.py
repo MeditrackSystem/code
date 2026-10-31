@@ -440,6 +440,44 @@ class AutoBleWorker(QThread):
                 return
             QThread.msleep(100)
 
+# --------------------------- Scan animation widget ---------------------------
+class ScanAnimationWidget(QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setMinimumSize(260, 260)
+        self._phase = 0
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self._tick)
+        self.timer.start(60)
+
+    def _tick(self):
+        self._phase = (self._phase + 6) % 360
+        self.update()
+
+    def paintEvent(self, event):
+        from PyQt5.QtGui import QPainter, QColor, QPen
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+        cx = self.width() // 2
+        cy = self.height() // 2
+        maxr = min(cx, cy) - 10
+        # outer rings
+        for i in range(4):
+            r = int(maxr * (0.35 + 0.2 * i) + 8 * ( (self._phase/360.0) ))
+            alpha = max(40, 220 - i * 45)
+            pen = QPen(QColor(37, 99, 235, alpha))
+            pen.setWidth(3)
+            painter.setPen(pen)
+            painter.setBrush(Qt.NoBrush)
+            painter.drawEllipse(cx - r, cy - r, 2 * r, 2 * r)
+        # center dot
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(QColor(30, 58, 138))
+        painter.drawEllipse(cx - 18, cy - 18, 36, 36)
+        painter.setPen(QColor("white"))
+        painter.setFont(QFont("Segoe UI", 12, QFont.Bold))
+        painter.drawText(cx - 18, cy - 18, 36, 36, Qt.AlignCenter, "RFID")
+
 # --------------------------- Main window ---------------------------
 class MediTrackWindow(QMainWindow):
     def __init__(self, current_user=None):
@@ -463,22 +501,20 @@ class MediTrackWindow(QMainWindow):
         self._build_ui()
         self._set_photo(None)
 
-        # Auto-connect to wireless sensor if available
-        if HAS_BLE:
-            self.worker = AutoBleWorker()
-            self.worker.status.connect(self._on_status)
-            self.worker.uid.connect(lambda u, src: self.process_uid(u, src))
-            self.worker.start()
-        else:
+        if not HAS_BLE:
             self.status_label.setText("Status: BLE not available")
+            self.bt_toggle.setEnabled(False)
 
     def _stylesheet(self):
         return """
         QMainWindow { background: #f3f6fb; }
-        QLabel { color: #1f2937; font-size: 13px; }
-        QLabel#title { color: #1e3a8a; font-size: 22px; font-weight: 700; }
-        QLabel#subtitle { color: #6b7280; font-size: 12px; }
-        QLabel#status { font-size: 13px; font-weight: 600; }
+        QLabel { color: #1f2937; font-size: 18px; }
+        QLabel#title { color: #1e3a8a; font-size: 28px; font-weight: 700; }
+        QLabel#subtitle { color: #6b7280; font-size: 16px; }
+        QLabel#status { font-size: 18px; font-weight: 600; }
+        QPushButton { font-size: 16px; }
+        QCheckBox { font-size: 16px; }
+        QLineEdit { font-size: 16px; }
         QPushButton {
             background: #2563eb; color: white; border: none;
             border-radius: 10px; padding: 9px 16px; font-weight: 600;
@@ -504,13 +540,13 @@ class MediTrackWindow(QMainWindow):
     def _build_ui(self):
         central = QWidget()
         self.setCentralWidget(central)
-        root_layout = QHBoxLayout(central)
-        root_layout.setContentsMargins(16, 16, 16, 16)
-        root_layout.setSpacing(16)
+        outer = QVBoxLayout(central)
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.setSpacing(0)
 
         # ---------- Sidebar ----------
         sidebar = card_frame()
-        sidebar.setFixedWidth(340)
+        sidebar.setFixedWidth(300)
         side = QVBoxLayout(sidebar)
         side.setContentsMargins(16, 16, 16, 16)
         side.setSpacing(12)
@@ -518,11 +554,10 @@ class MediTrackWindow(QMainWindow):
         title = QLabel("MediTrack")
         title.setObjectName("title")
         side.addWidget(title)
-        sub = QLabel("Hospital Management System")
+        sub = QLabel("Hospital Management")
         sub.setObjectName("subtitle")
         side.addWidget(sub)
 
-        # Current user
         side.addWidget(self._section("Signed in"))
         user_name = self.current_user.get("name", "Unknown")
         self.current_user_label = QLabel(user_name)
@@ -530,31 +565,12 @@ class MediTrackWindow(QMainWindow):
         side.addWidget(self.current_user_label)
 
         side.addWidget(self._section("Wireless sensor"))
-        self.status_label = QLabel("Status: Waiting for sensor...")
+        self.bt_toggle = QCheckBox("Enable Bluetooth sensor")
+        self.bt_toggle.toggled.connect(self._on_bt_toggle)
+        side.addWidget(self.bt_toggle)
+        self.status_label = QLabel("Status: Bluetooth off")
         self.status_label.setObjectName("status")
         side.addWidget(self.status_label)
-
-        side.addWidget(self._section("Find patient by name"))
-        self.search_input = QLineEdit()
-        self.search_input.setPlaceholderText("Type patient name or ID")
-        side.addWidget(self.search_input)
-        search_row = QHBoxLayout()
-        find_btn = QPushButton("Find")
-        find_btn.clicked.connect(self.find_patient_by_name)
-        search_row.addWidget(find_btn)
-        quick_btn = QPushButton("Quick select")
-        quick_btn.setObjectName("secondary")
-        quick_btn.clicked.connect(self.quick_select_patient)
-        search_row.addWidget(quick_btn)
-        side.addLayout(search_row)
-
-        side.addWidget(self._section("Quick patient select"))
-        self.patient_combo = QComboBox()
-        self.patient_combo.addItem("Select patient...")
-        for p in read_csv("patients"):
-            self.patient_combo.addItem(f"{p['name']} ({p['patient_code']})", p["id"])
-        self.patient_combo.currentIndexChanged.connect(self.on_patient_selected)
-        side.addWidget(self.patient_combo)
 
         side.addStretch(1)
         logout_btn = QPushButton("Logout")
@@ -562,9 +578,39 @@ class MediTrackWindow(QMainWindow):
         logout_btn.clicked.connect(self.close)
         side.addWidget(logout_btn)
 
-        # ---------- Main content ----------
-        main = QVBoxLayout()
-        main.setSpacing(16)
+        # ---------- Stacked pages ----------
+        self.stack = QStackedWidget()
+
+        # Front / scan page
+        front = QWidget()
+        front_layout = QVBoxLayout(front)
+        front_layout.setAlignment(Qt.AlignCenter)
+        front_layout.setSpacing(24)
+
+        front_title = QLabel("Ready to Scan")
+        front_title.setStyleSheet("font-size:28px; font-weight:700; color:#1e3a8a;")
+        front_title.setAlignment(Qt.AlignCenter)
+        front_layout.addWidget(front_title)
+
+        front_sub = QLabel("Scan an RFID wristband to view patient information")
+        front_sub.setStyleSheet("font-size:16px; color:#6b7280;")
+        front_sub.setAlignment(Qt.AlignCenter)
+        front_layout.addWidget(front_sub)
+
+        self.scan_anim = ScanAnimationWidget()
+        front_layout.addWidget(self.scan_anim, 0, Qt.AlignCenter)
+
+        self.front_status = QLabel("Waiting for scan...")
+        self.front_status.setStyleSheet("font-size:16px; font-weight:600; color:#2563eb;")
+        self.front_status.setAlignment(Qt.AlignCenter)
+        front_layout.addWidget(self.front_status)
+
+        self.stack.addWidget(front)
+
+        # Result page
+        result = QWidget()
+        result_layout = QVBoxLayout(result)
+        result_layout.setSpacing(16)
 
         # Patient card
         patient_card = card_frame()
@@ -573,15 +619,15 @@ class MediTrackWindow(QMainWindow):
         pc.setSpacing(18)
 
         self.photo_label = QLabel("No photo")
-        self.photo_label.setFixedSize(180, 180)
+        self.photo_label.setFixedSize(200, 200)
         self.photo_label.setAlignment(Qt.AlignCenter)
-        self.photo_label.setStyleSheet("background:#eff6ff; border-radius:90px; color:#2563eb; font-weight:600;")
+        self.photo_label.setStyleSheet("background:#eff6ff; border-radius:100px; color:#2563eb; font-weight:600;")
         pc.addWidget(self.photo_label, 0, Qt.AlignTop)
 
         details = QVBoxLayout()
-        details.setSpacing(6)
+        details.setSpacing(8)
         self.name_label = QLabel("No patient loaded")
-        self.name_label.setStyleSheet("font-size:18px; font-weight:700; color:#1e3a8a;")
+        self.name_label.setStyleSheet("font-size:22px; font-weight:700; color:#1e3a8a;")
         details.addWidget(self.name_label)
 
         self.detail_labels = {}
@@ -594,9 +640,9 @@ class MediTrackWindow(QMainWindow):
         ]:
             row = QHBoxLayout()
             k = QLabel(f"{key}:")
-            k.setStyleSheet("font-weight:600; color:#374151;")
+            k.setStyleSheet("font-weight:600; color:#374151; font-size:16px;")
             v = QLabel(text)
-            v.setStyleSheet("color:#111827;")
+            v.setStyleSheet("color:#111827; font-size:16px;")
             self.detail_labels[key] = v
             row.addWidget(k)
             row.addWidget(v)
@@ -604,7 +650,7 @@ class MediTrackWindow(QMainWindow):
             details.addLayout(row)
         details.addStretch(1)
         pc.addLayout(details, 1)
-        main.addWidget(patient_card)
+        result_layout.addWidget(patient_card)
 
         # meds + records
         mid_row = QHBoxLayout()
@@ -616,7 +662,7 @@ class MediTrackWindow(QMainWindow):
         mc.addWidget(self._card_title("Medications"))
         self.meds_text = QTextEdit()
         self.meds_text.setReadOnly(True)
-        self.meds_text.setPlaceholderText("Medication orders will appear here after a scan.")
+        self.meds_text.setStyleSheet("font-size:15px;")
         mc.addWidget(self.meds_text)
         mid_row.addWidget(meds_card, 1)
 
@@ -626,14 +672,30 @@ class MediTrackWindow(QMainWindow):
         rc.addWidget(self._card_title("Clinical records"))
         self.records_text = QTextEdit()
         self.records_text.setReadOnly(True)
-        self.records_text.setPlaceholderText("Clinical notes will appear here after a scan.")
+        self.records_text.setStyleSheet("font-size:15px;")
         rc.addWidget(self.records_text)
         mid_row.addWidget(rec_card, 1)
 
-        main.addLayout(mid_row, 1)
+        result_layout.addLayout(mid_row, 1)
 
-        root_layout.addWidget(sidebar)
-        root_layout.addLayout(main, 1)
+        scan_again_btn = QPushButton("Scan Again")
+        scan_again_btn.clicked.connect(self.back_to_front)
+        result_layout.addWidget(scan_again_btn, 0, Qt.AlignRight)
+
+        self.stack.addWidget(result)
+
+        # combine sidebar + stack
+        content = QHBoxLayout()
+        content.setContentsMargins(0, 0, 0, 0)
+        content.setSpacing(0)
+        content.addWidget(sidebar)
+        content.addWidget(self.stack, 1)
+
+        wrapper = QWidget()
+        wrapper.setLayout(content)
+        outer.addWidget(wrapper)
+
+        self.stack.setCurrentIndex(0)
 
     def _section(self, text):
         lbl = QLabel(text.upper())
@@ -649,8 +711,37 @@ class MediTrackWindow(QMainWindow):
         return self.user_map.get(self.user_combo.currentText(), "")
 
     # ---------------- connection handling ----------------
+    def _on_bt_toggle(self, checked):
+        if checked:
+            if not HAS_BLE:
+                self.status_label.setText("Status: BLE not available")
+                self.bt_toggle.setChecked(False)
+                return
+            if self.worker is None or not self.worker.isRunning():
+                self.worker = AutoBleWorker()
+                self.worker.status.connect(self._on_status)
+                self.worker.uid.connect(lambda u, src: self.process_uid(u, src))
+                self.worker.start()
+            self.status_label.setText("Status: Starting...")
+        else:
+            if self.worker is not None:
+                self.worker.stop()
+                self.worker = None
+            self.status_label.setText("Status: Bluetooth off")
+
+    def back_to_front(self):
+        self.name_label.setText("No patient loaded")
+        for v in self.detail_labels.values():
+            v.setText("-")
+        self._set_photo(None)
+        self.meds_text.setPlainText("")
+        self.records_text.setPlainText("")
+        self.front_status.setText("Waiting for scan...")
+        self.stack.setCurrentIndex(0)
+
     def _on_status(self, text):
         self.status_label.setText(f"Status: {text}")
+        self.front_status.setText(text)
 
     # ---------------- scan handling ----------------
     def process_uid(self, uid, reader_type=None):
@@ -672,6 +763,7 @@ class MediTrackWindow(QMainWindow):
             return
 
         self._display_bundle(bundle, reader_type, uid)
+        self.stack.setCurrentIndex(1)
 
     def _display_bundle(self, bundle, reader_type, uid=None):
         p = bundle["patient"]
@@ -853,6 +945,6 @@ if __name__ == "__main__":
 
     win = MediTrackWindow(current_user=login.user)
     app.installEventFilter(win)
-    win.show()
+    win.showFullScreen()
     sys.exit(app.exec_())
     
