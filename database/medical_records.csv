@@ -1,3 +1,8 @@
 id,patient_id,clinician_id,record_type,note,recorded_at
 1,1,2,Diagnosis,Hypertension; on maintenance medication.,2026-10-31T09:00:00
 2,1,2,Allergy,No known drug allergies (NKDA).,2026-10-31T09:05:00
+3,2,3,Diagnosis,Type 2 Diabetes Mellitus.,2026-10-31T09:10:00
+4,2,3,Allergy,Penicillin allergy.,2026-10-31T09:12:00
+5,3,2,Diagnosis,"Asthma, controlled.",2026-10-31T09:15:00
+6,4,3,Diagnosis,Routine check-up; no acute issues.,2026-10-31T09:20:00
+7,5,2,Diagnosis,Post-operative recovery monitoring.,2026-10-31T09:25:00

@@ -1,2 +1,3 @@
 id,tag_id,user_id,reader_type,scanned_at,outcome
-1,1,3,Bluetooth,2026-10-31T10:15:00,Success
+1,1,4,Bluetooth,2026-10-31T10:15:00,Success
+2,2,5,Keyboard Wedge,2026-10-31T10:20:00,Success

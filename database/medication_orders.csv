@@ -1,3 +1,6 @@
 id,patient_id,medication,dose,route,frequency,prescriber_id,status
 1,1,Medication A,500 mg,Oral,Once daily at 08:00,2,Active
 2,1,Medication B,250 mg,Oral,Once daily at 14:00,2,Active
+3,2,Metformin,500 mg,Oral,Twice daily,3,Active
+4,3,Salbutamol Inhaler,2 puffs,Inhalation,As needed,2,Active
+5,5,Paracetamol,500 mg,Oral,Every 6 hours as needed,2,Active

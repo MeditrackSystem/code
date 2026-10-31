@@ -1,2 +1,6 @@
 id,patient_code,name,birth_date,room,bed,attending_physician,admission_status
 1,PAT-2026-001,Juan Dela Cruz,1985-05-12,201,A,Dr. Maria Santos,Admitted
+2,PAT-2026-002,Maria Clara Reyes,1990-09-22,202,B,Dr. John Lee,Admitted
+3,PAT-2026-003,Pedro Santos,1978-03-14,203,A,Dr. Maria Santos,Admitted
+4,PAT-2026-004,Ana Lim,2001-11-30,204,C,Dr. John Lee,Outpatient
+5,PAT-2026-005,Roberto Garcia,1965-07-08,205,B,Dr. Maria Santos,Admitted
