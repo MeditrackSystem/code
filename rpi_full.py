@@ -839,8 +839,6 @@ class MediTrackWindow(QMainWindow):
 
     def log(self, msg):
         line = f"[{datetime.now().strftime('%H:%M:%S')}] {msg}"
-        self.log_text.append(line)
-        self.log_text.verticalScrollBar().setValue(self.log_text.verticalScrollBar().maximum())
         print(line)
 
 
