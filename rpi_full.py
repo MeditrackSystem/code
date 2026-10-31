@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
 """
-MediTrack - Raspberry Pi RFID client (Bluetooth/BLE).
+MediTrack - Raspberry Pi RFID dashboard (PyQt5).
 
-Connects to the ESP32-S3 RFID reader over BLE, looks up the scanned
-RFID tag in the local CSV database, and shows the patient's record,
-medications and photo. Scan events are appended to scan_logs/audit_logs
-and (optionally) POSTed to a MediTrack Flask backend.
+Supports two reader modes:
+  * Bluetooth/BLE (ESP32-S3-RFID-Reader)
+  * USB/Serial RFID reader (keyboard/serial wedge)
 
-Dependencies (on Raspberry Pi OS):
-    pip install bleak pillow requests
+On scan, looks up the tag in the local CSV database and shows the patient's
+record, medications and photo. Scan events are logged to CSV and optionally
+POSTed to a MediTrack Flask backend.
+
+Dependencies:
+    pip install PyQt5 pillow bleak pyserial requests
 
 Run:
     python rpi_full.py
@@ -16,27 +19,22 @@ Run:
 
 import asyncio
 import csv
-import json
 import os
 import threading
 import traceback
 from datetime import datetime
 from pathlib import Path
 
-import tkinter as tk
-from tkinter import ttk, scrolledtext
+from PyQt5.QtCore import Qt, QThread, pyqtSignal
+from PyQt5.QtGui import QFont, QPixmap
+from PyQt5.QtWidgets import (
+    QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
+    QLabel, QPushButton, QComboBox, QLineEdit, QTextEdit, QFrame,
+    QScrollArea, QMessageBox, QFileDialog, QSizePolicy
+)
 
-from PIL import Image, ImageTk
+from PIL import Image, ImageQt
 
-from bleak import BleakScanner, BleakClient
-
-try:
-    import requests
-    HAS_REQUESTS = True
-except Exception:
-    HAS_REQUESTS = False
-
-# ============================ CONFIG ============================
 BASE_DIR = Path(__file__).resolve().parent
 DB_DIR = BASE_DIR / "database"
 IMG_DIR = BASE_DIR / "images"
@@ -44,14 +42,31 @@ LOG_DIR = BASE_DIR / "logs"
 
 DEVICE_NAME = "ESP32-S3-RFID-Reader"
 CHARACTERISTIC_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8"
-
-# Optional: set MEDITRACK_SERVER=http://<host>:5000 to POST scan results
 SERVER_URL = os.environ.get("MEDITRACK_SERVER", "").rstrip("/")
 
 LOG_DIR.mkdir(exist_ok=True)
 DB_DIR.mkdir(exist_ok=True)
 IMG_DIR.mkdir(exist_ok=True)
-# ===============================================================
+
+# Optional dependencies
+try:
+    from bleak import BleakScanner, BleakClient
+    HAS_BLE = True
+except Exception:
+    HAS_BLE = False
+
+try:
+    import serial
+    import serial.tools.list_ports
+    HAS_SERIAL = True
+except Exception:
+    HAS_SERIAL = False
+
+try:
+    import requests
+    HAS_REQUESTS = True
+except Exception:
+    HAS_REQUESTS = False
 
 
 # --------------------------- CSV helpers ---------------------------
@@ -88,13 +103,10 @@ def find_one(rows, **kwargs):
     return None
 
 
-# --------------------------- Data access ---------------------------
 def get_bundle(uid):
-    """Return (bundle_dict, message) for a scanned tag UID."""
     tag = find_one(read_csv("rfid_tags"), tag_token=uid, status="Active")
     if not tag:
         return None, "Tag not found or inactive."
-
     patient = find_one(read_csv("patients"), id=tag["patient_id"])
     if not patient:
         return None, "Patient record not found for this tag."
@@ -114,17 +126,8 @@ def get_bundle(uid):
         latest = history[-1] if history else None
         meds.append((o, latest))
 
-    records = [
-        r for r in read_csv("medical_records")
-        if r["patient_id"] == patient["id"]
-    ]
-
-    return {
-        "tag": tag,
-        "patient": patient,
-        "meds": meds,
-        "records": records,
-    }, "OK"
+    records = [r for r in read_csv("medical_records") if r["patient_id"] == patient["id"]]
+    return {"tag": tag, "patient": patient, "meds": meds, "records": records}, "OK"
 
 
 def log_scan(tag_id, user_id, reader_type, outcome):
@@ -157,337 +160,500 @@ def save_uid(uid):
         print("log write failed:", e)
 
 
-# --------------------------- GUI app ---------------------------
-class MediTrackApp:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("MediTrack - RFID Patient Lookup")
-        self.root.geometry("980x640")
-        self.root.resizable(False, False)
+# --------------------------- Worker threads ---------------------------
+class BleWorker(QThread):
+    status = pyqtSignal(str)
+    log = pyqtSignal(str)
+    uid = pyqtSignal(str)
 
+    def __init__(self, test_mode=False, parent=None):
+        super().__init__(parent)
+        self.test_mode = test_mode
+        self.running = True
         self.client = None
-        self.reading = False
-        self.scanning = False
-        self.loop = None
-        self.thread = None
-        self.current_photo = None
 
-        self.users = read_csv("users")
-        self.user_map = {f"{u['name']} ({u['role']})": u["id"] for u in self.users}
-        self.current_user_var = tk.StringVar(
-            value=next(iter(self.user_map)) if self.user_map else ""
-        )
+    def stop(self):
+        self.running = False
 
-        self._build_ui()
-        self._show_placeholder_photo()
-
-    # ---------------- UI ----------------
-    def _build_ui(self):
-        # Top bar
-        top = tk.Frame(self.root)
-        top.pack(fill="x", padx=10, pady=(10, 4))
-
-        tk.Label(top, text="MediTrack RFID", font=("Helvetica", 16, "bold")).pack(side="left")
-
-        user_frame = tk.Frame(top)
-        user_frame.pack(side="right")
-        tk.Label(user_frame, text="Logged-in user:").pack(side="left", padx=(0, 4))
-        self.user_combo = ttk.Combobox(
-            user_frame, textvariable=self.current_user_var,
-            values=list(self.user_map.keys()), state="readonly", width=34
-        )
-        self.user_combo.pack(side="left")
-
-        # Buttons
-        btns = tk.Frame(self.root)
-        btns.pack(pady=6)
-        self.connect_btn = tk.Button(
-            btns, text="Scan & Connect", width=16, bg="#2ecc71", fg="white",
-            command=self.start_connection)
-        self.connect_btn.grid(row=0, column=0, padx=3)
-        self.test_btn = tk.Button(
-            btns, text="Test Scan", width=12, bg="#3498db", fg="white",
-            command=self.start_test_scan)
-        self.test_btn.grid(row=0, column=1, padx=3)
-        self.disconnect_btn = tk.Button(
-            btns, text="Disconnect", width=12, bg="#e74c3c", fg="white",
-            command=self.disconnect, state="disabled")
-        self.disconnect_btn.grid(row=0, column=2, padx=3)
-
-        self.status_label = tk.Label(
-            self.root, text="Status: Idle", fg="gray", font=("Helvetica", 11))
-        self.status_label.pack(pady=4)
-
-        # Main content: left info, right log
-        content = tk.PanedWindow(self.root, orient=tk.HORIZONTAL)
-        content.pack(fill="both", expand=True, padx=10, pady=6)
-
-        left = tk.Frame(content, bd=1, relief="groove")
-        right = tk.Frame(content, bd=1, relief="groove")
-        content.add(left, minsize=620)
-        content.add(right, minsize=340)
-
-        # --- Left: patient info ---
-        tk.Label(left, text="Patient Information", font=("Helvetica", 12, "bold")).pack(anchor="w", padx=8, pady=(6, 2))
-
-        info = tk.Frame(left)
-        info.pack(fill="x", padx=8, pady=4)
-
-        self.photo_label = tk.Label(info, text="No photo", width=24, height=12,
-                                   bg="#ecf0f1", relief="sunken")
-        self.photo_label.grid(row=0, column=0, rowspan=6, padx=(0, 12), pady=4, sticky="n")
-
-        fields = tk.Frame(info)
-        fields.grid(row=0, column=1, sticky="nw")
-
-        self.vars = {
-            "name": tk.StringVar(value="-"),
-            "patient_id": tk.StringVar(value="-"),
-            "room_bed": tk.StringVar(value="-"),
-            "physician": tk.StringVar(value="-"),
-            "rfid_status": tk.StringVar(value="-"),
-            "birth_date": tk.StringVar(value="-"),
-        }
-        labels = [
-            ("Name:", "name"),
-            ("Patient ID:", "patient_id"),
-            ("Room / Bed:", "room_bed"),
-            ("Attending physician:", "physician"),
-            ("RFID status:", "rfid_status"),
-            ("Birth date:", "birth_date"),
-        ]
-        for i, (txt, key) in enumerate(labels):
-            tk.Label(fields, text=txt, font=("Helvetica", 10, "bold")).grid(row=i, column=0, sticky="w", pady=2)
-            tk.Label(fields, textvariable=self.vars[key], font=("Helvetica", 10)).grid(row=i, column=1, sticky="w", pady=2, padx=(6, 0))
-
-        # Medications
-        tk.Label(left, text="Medications", font=("Helvetica", 12, "bold")).pack(anchor="w", padx=8, pady=(8, 2))
-        self.meds_text = scrolledtext.ScrolledText(left, height=8, width=74, state="disabled", font=("Courier", 9))
-        self.meds_text.pack(padx=8, pady=4, fill="x")
-
-        # Clinical notes / records
-        tk.Label(left, text="Clinical records", font=("Helvetica", 12, "bold")).pack(anchor="w", padx=8, pady=(8, 2))
-        self.records_text = scrolledtext.ScrolledText(left, height=6, width=74, state="disabled", font=("Courier", 9))
-        self.records_text.pack(padx=8, pady=4, fill="x")
-
-        # --- Right: log ---
-        tk.Label(right, text="Activity log", font=("Helvetica", 12, "bold")).pack(anchor="w", padx=8, pady=(6, 2))
-        self.text_area = scrolledtext.ScrolledText(right, width=46, height=34, state="disabled", font=("Courier", 9))
-        self.text_area.pack(padx=8, pady=4, fill="both", expand=True)
-
-        self.log("Ready. Press 'Test Scan' or 'Scan & Connect'.")
-
-    def _show_placeholder_photo(self):
-        self.photo_label.config(image="", text="No photo")
-
-    def show_photo(self, patient_id):
-        path = None
-        for ext in (".jpg", ".jpeg", ".png"):
-            cand = IMG_DIR / f"patient_{patient_id}{ext}"
-            if cand.exists():
-                path = cand
-                break
-        if path is None:
-            self.photo_label.config(image="", text="No photo")
-            self.current_photo = None
+    def run(self):
+        if not HAS_BLE:
+            self.log.emit("bleak not installed. Install with: pip install bleak")
             return
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
         try:
-            img = Image.open(path)
-            img = img.resize((150, 150))
-            self.current_photo = ImageTk.PhotoImage(img)
-            self.photo_label.config(image=self.current_photo, text="")
+            if self.test_mode:
+                loop.run_until_complete(self._test())
+            else:
+                loop.run_until_complete(self._connect())
         except Exception as e:
-            self.photo_label.config(image="", text="Photo error")
-            self.log(f"Photo load error: {e}")
-
-    # ---------------- thread-safe UI ----------------
-    def update_status(self, text, color="black"):
-        self.root.after(0, lambda: self.status_label.config(text=text, fg=color))
-
-    def log(self, msg):
-        line = f"[{datetime.now().strftime('%H:%M:%S')}] {msg}"
-
-        def _do():
-            self.text_area.config(state="normal")
-            self.text_area.insert(tk.END, line + "\n")
-            self.text_area.see(tk.END)
-            self.text_area.config(state="disabled")
-        self.root.after(0, _do)
-        print(line)
-
-    def set_text(self, widget, text):
-        def _do():
-            widget.config(state="normal")
-            widget.delete("1.0", tk.END)
-            widget.insert(tk.END, text)
-            widget.config(state="disabled")
-        self.root.after(0, _do)
-
-    def set_buttons(self, connected=False, busy=False):
-        def _do():
-            state = "disabled" if (connected or busy) else "normal"
-            self.connect_btn.config(state=state)
-            self.test_btn.config(state=state)
-            self.disconnect_btn.config(state="normal" if connected else "disabled")
-        self.root.after(0, _do)
-
-    def current_user_id(self):
-        return self.user_map.get(self.current_user_var.get(), "")
-
-    # ---------------- button handlers ----------------
-    def start_connection(self):
-        if self.reading or self.scanning:
-            return
-        self.reading = True
-        self.set_buttons(connected=False, busy=True)
-        self.thread = threading.Thread(target=self._run, args=(self._connect_flow,), daemon=True)
-        self.thread.start()
-
-    def start_test_scan(self):
-        if self.reading or self.scanning:
-            return
-        self.scanning = True
-        self.set_buttons(connected=False, busy=True)
-        self.thread = threading.Thread(target=self._run, args=(self._test_flow,), daemon=True)
-        self.thread.start()
-
-    def disconnect(self):
-        self.reading = False
-        self.update_status("Status: Disconnecting...", "orange")
-        if self.client and self.client.is_connected and self.loop:
-            asyncio.run_coroutine_threadsafe(self.client.disconnect(), self.loop)
-
-    # ---------------- async runners ----------------
-    def _run(self, coro_func):
-        try:
-            self.loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(self.loop)
-            self.loop.run_until_complete(coro_func())
-        except Exception as e:
-            print("[THREAD]", e)
-            traceback.print_exc()
-            self.log(f"THREAD ERROR: {e}")
-            self.update_status(f"Error: {e}", "red")
+            self.log.emit(f"BLE error: {e}")
         finally:
-            self.reading = False
-            self.scanning = False
-            self.set_buttons(connected=False, busy=False)
+            loop.close()
 
-    async def _scan_devices(self, timeout=10.0):
-        return await BleakScanner.discover(timeout=timeout, return_adv=True)
-
-    async def _test_flow(self):
-        self.update_status("Status: Test scanning...", "orange")
-        self.log(f"Scanning for {10}s (active mode)...")
+    async def _test(self):
+        self.status.emit("Test scanning...")
+        self.log.emit("Scanning for 10s (active mode)...")
         try:
-            devices = await self._scan_devices(timeout=10.0)
+            devices = await BleakScanner.discover(timeout=10.0, return_adv=True)
         except Exception as e:
-            self.update_status("Status: Scan error", "red")
-            self.log(f"Scan failed: {e}")
+            self.status.emit("Scan error")
+            self.log.emit(f"Scan failed: {e}")
             return
-
         if not devices:
-            self.update_status("Status: No devices found", "red")
-            self.log("No BLE devices found. Check Bluetooth and ESP32 power.")
+            self.status.emit("No devices found")
+            self.log.emit("No BLE devices found.")
             return
-
-        self.log(f"Found {len(devices)} device(s):")
         target_found = False
         for device, adv in devices.values():
             name = device.name or "(unnamed)"
-            mark = "  <-- TARGET" if name == DEVICE_NAME else ""
-            self.log(f"  {name} [{device.address}] rssi={adv.rssi}{mark}")
+            self.log.emit(f"  {name} [{device.address}] rssi={adv.rssi}")
             if name == DEVICE_NAME:
                 target_found = True
-
         if target_found:
-            self.update_status("Status: Target visible", "green")
-            self.log(f"'{DEVICE_NAME}' is visible. Press 'Scan & Connect'.")
+            self.status.emit("Target visible")
+            self.log.emit(f"'{DEVICE_NAME}' is visible.")
         else:
-            self.update_status("Status: Target not found", "red")
-            self.log(f"'{DEVICE_NAME}' not in list. Check ESP32 serial monitor.")
+            self.status.emit("Target not found")
+            self.log.emit(f"'{DEVICE_NAME}' not in list.")
 
-    async def _connect_flow(self):
-        self.update_status("Status: Scanning...", "orange")
-        self.log("Scanning for target device...")
+    async def _connect(self):
+        self.status.emit("Scanning...")
+        self.log.emit("Scanning for target device...")
         try:
-            devices = await self._scan_devices(timeout=10.0)
+            devices = await BleakScanner.discover(timeout=10.0, return_adv=True)
         except Exception as e:
-            self.update_status("Status: Scan error", "red")
-            self.log(f"Scan failed: {e}")
+            self.status.emit("Scan error")
+            self.log.emit(f"Scan failed: {e}")
             return
 
         target = next((d for d, _ in devices.values() if d.name == DEVICE_NAME), None)
         if not target:
-            self.update_status("Status: Device not found", "red")
-            self.log(f"'{DEVICE_NAME}' not found. Try 'Test Scan' first.")
+            self.status.emit("Device not found")
+            self.log.emit(f"'{DEVICE_NAME}' not found. Try Test Scan first.")
             return
 
-        self.update_status(f"Found {target.address}. Connecting...", "orange")
-        self.log(f"Connecting to {target.address} ...")
-
+        self.status.emit(f"Connecting to {target.address}...")
+        self.log.emit(f"Connecting to {target.address} ...")
         try:
             async with BleakClient(target, timeout=15.0) as client:
                 self.client = client
-                self.update_status("Status: Connected", "green")
-                self.log("[OK] Connected. Waiting for card taps...")
-                self.set_buttons(connected=True, busy=False)
+                self.status.emit("Connected")
+                self.log.emit("[OK] Connected. Waiting for card taps...")
 
                 def on_notify(_sender, data: bytearray):
                     try:
                         uid = data.decode("utf-8", errors="replace").strip()
                         if uid:
-                            self.root.after(0, lambda u=uid: self.handle_uid(u))
+                            self.uid.emit(uid)
                     except Exception as e:
-                        print("notify err:", e)
+                        self.log.emit(f"notify err: {e}")
 
                 await client.start_notify(CHARACTERISTIC_UUID, on_notify)
-                self.log("Notifications enabled.")
+                self.log.emit("Notifications enabled.")
 
-                while self.reading and client.is_connected:
+                while self.running and client.is_connected:
                     await asyncio.sleep(0.2)
 
-                self.log("Stopping notifications...")
+                self.log.emit("Stopping notifications...")
                 try:
                     await client.stop_notify(CHARACTERISTIC_UUID)
                 except Exception:
                     pass
-
         except Exception as e:
-            print("[BLE ERROR]", e)
-            traceback.print_exc()
-            self.update_status(f"Error: {e}", "red")
-            self.log(f"BLE error: {e}")
+            self.status.emit(f"Error: {e}")
+            self.log.emit(f"BLE error: {e}")
         finally:
             self.client = None
-            self.reading = False
-            self.update_status("Status: Disconnected", "red")
-            self.log("Disconnected.")
+            self.status.emit("Disconnected")
+            self.log.emit("Disconnected.")
+
+
+class SerialWorker(QThread):
+    status = pyqtSignal(str)
+    log = pyqtSignal(str)
+    uid = pyqtSignal(str)
+
+    def __init__(self, port, baud=9600, parent=None):
+        super().__init__(parent)
+        self.port = port
+        self.baud = baud
+        self.running = True
+        self.ser = None
+
+    def stop(self):
+        self.running = False
+
+    def run(self):
+        if not HAS_SERIAL:
+            self.log.emit("pyserial not installed. Install with: pip install pyserial")
+            return
+        try:
+            self.ser = serial.Serial(self.port, self.baud, timeout=1)
+        except Exception as e:
+            self.status.emit("Serial error")
+            self.log.emit(f"Cannot open {self.port}: {e}")
+            return
+
+        self.status.emit(f"Connected {self.port}")
+        self.log.emit(f"[OK] Serial connected: {self.port} @ {self.baud}")
+        while self.running:
+            try:
+                line = self.ser.readline().decode("utf-8", errors="replace").strip()
+                if line:
+                    self.uid.emit(line)
+            except Exception as e:
+                self.log.emit(f"Serial read error: {e}")
+                break
+        try:
+            self.ser.close()
+        except Exception:
+            pass
+        self.status.emit("Disconnected")
+        self.log.emit("Serial disconnected.")
+
+
+# --------------------------- UI helpers ---------------------------
+def card_frame():
+    f = QFrame()
+    f.setObjectName("card")
+    f.setStyleSheet("""
+        QFrame#card {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 14px;
+        }
+    """)
+    return f
+
+
+# --------------------------- Main window ---------------------------
+class MediTrackWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("MediTrack - RFID Patient Dashboard")
+        self.resize(1180, 760)
+        self.setStyleSheet(self._stylesheet())
+
+        self.users = read_csv("users")
+        self.user_map = {f"{u['name']} ({u['role']})": u["id"] for u in self.users}
+
+        self.worker = None
+        self.current_mode = "Bluetooth"
+
+        self._build_ui()
+        self._set_photo(None)
+
+    def _stylesheet(self):
+        return """
+        QMainWindow { background: #f3f6fb; }
+        QLabel { color: #1f2937; font-size: 13px; }
+        QLabel#title { color: #1e3a8a; font-size: 22px; font-weight: 700; }
+        QLabel#subtitle { color: #6b7280; font-size: 12px; }
+        QLabel#status { font-size: 13px; font-weight: 600; }
+        QPushButton {
+            background: #2563eb; color: white; border: none;
+            border-radius: 10px; padding: 9px 16px; font-weight: 600;
+        }
+        QPushButton:hover { background: #1d4ed8; }
+        QPushButton:pressed { background: #1e40af; }
+        QPushButton:disabled { background: #93c5fd; color: #f9fafb; }
+        QPushButton#secondary {
+            background: white; color: #2563eb; border: 1px solid #bfdbfe;
+        }
+        QPushButton#secondary:hover { background: #eff6ff; }
+        QComboBox, QLineEdit {
+            border: 1px solid #d1d5db; border-radius: 10px;
+            padding: 8px 10px; background: white; min-height: 18px;
+        }
+        QTextEdit {
+            background: white; border: 1px solid #e5e7eb;
+            border-radius: 10px; padding: 6px;
+        }
+        QFrame#card { background: white; border: 1px solid #e5e7eb; border-radius: 14px; }
+        """
+
+    def _build_ui(self):
+        central = QWidget()
+        self.setCentralWidget(central)
+        root_layout = QHBoxLayout(central)
+        root_layout.setContentsMargins(16, 16, 16, 16)
+        root_layout.setSpacing(16)
+
+        # ---------- Sidebar ----------
+        sidebar = card_frame()
+        sidebar.setFixedWidth(320)
+        side = QVBoxLayout(sidebar)
+        side.setContentsMargins(16, 16, 16, 16)
+        side.setSpacing(12)
+
+        title = QLabel("MediTrack")
+        title.setObjectName("title")
+        side.addWidget(title)
+        sub = QLabel("RFID Patient Dashboard")
+        sub.setObjectName("subtitle")
+        side.addWidget(sub)
+
+        side.addWidget(self._section("Reader mode"))
+        self.mode_combo = QComboBox()
+        self.mode_combo.addItems(["Bluetooth (BLE)", "USB / Serial"])
+        self.mode_combo.currentTextChanged.connect(self._on_mode_changed)
+        side.addWidget(self.mode_combo)
+
+        side.addWidget(self._section("Connection"))
+        conn_row = QHBoxLayout()
+        self.connect_btn = QPushButton("Connect")
+        self.connect_btn.clicked.connect(self.connect_reader)
+        self.disconnect_btn = QPushButton("Disconnect")
+        self.disconnect_btn.setObjectName("secondary")
+        self.disconnect_btn.clicked.connect(self.disconnect_reader)
+        self.disconnect_btn.setEnabled(False)
+        conn_row.addWidget(self.connect_btn)
+        conn_row.addWidget(self.disconnect_btn)
+        side.addLayout(conn_row)
+
+        self.test_btn = QPushButton("Test Scan")
+        self.test_btn.setObjectName("secondary")
+        self.test_btn.clicked.connect(self.test_scan)
+        side.addWidget(self.test_btn)
+
+        # serial options
+        self.serial_widget = QWidget()
+        serial_layout = QVBoxLayout(self.serial_widget)
+        serial_layout.setContentsMargins(0, 0, 0, 0)
+        serial_layout.setSpacing(6)
+        serial_layout.addWidget(QLabel("Serial port"))
+        self.port_combo = QComboBox()
+        self._refresh_ports()
+        serial_layout.addWidget(self.port_combo)
+        serial_layout.addWidget(QLabel("Baud rate"))
+        self.baud_combo = QComboBox()
+        self.baud_combo.addItems(["9600", "115200", "38400", "19200"])
+        serial_layout.addWidget(self.baud_combo)
+        refresh_btn = QPushButton("Refresh ports")
+        refresh_btn.setObjectName("secondary")
+        refresh_btn.clicked.connect(self._refresh_ports)
+        serial_layout.addWidget(refresh_btn)
+        self.serial_widget.setVisible(False)
+        side.addWidget(self.serial_widget)
+
+        side.addWidget(self._section("Logged-in user"))
+        self.user_combo = QComboBox()
+        self.user_combo.addItems(list(self.user_map.keys()))
+        side.addWidget(self.user_combo)
+
+        side.addWidget(self._section("Manual UID lookup"))
+        manual_row = QHBoxLayout()
+        self.uid_input = QLineEdit()
+        self.uid_input.setPlaceholderText("Enter RFID UID")
+        manual_row.addWidget(self.uid_input)
+        lookup_btn = QPushButton("Lookup")
+        lookup_btn.clicked.connect(lambda: self.process_uid(self.uid_input.text()))
+        manual_row.addWidget(lookup_btn)
+        side.addLayout(manual_row)
+
+        side.addStretch(1)
+        self.status_label = QLabel("Status: Idle")
+        self.status_label.setObjectName("status")
+        side.addWidget(self.status_label)
+
+        # ---------- Main content ----------
+        main = QVBoxLayout()
+        main.setSpacing(16)
+
+        # Patient card
+        patient_card = card_frame()
+        pc = QHBoxLayout(patient_card)
+        pc.setContentsMargins(18, 18, 18, 18)
+        pc.setSpacing(18)
+
+        self.photo_label = QLabel("No photo")
+        self.photo_label.setFixedSize(180, 180)
+        self.photo_label.setAlignment(Qt.AlignCenter)
+        self.photo_label.setStyleSheet("background:#eff6ff; border-radius:90px; color:#2563eb; font-weight:600;")
+        pc.addWidget(self.photo_label, 0, Qt.AlignTop)
+
+        details = QVBoxLayout()
+        details.setSpacing(6)
+        self.name_label = QLabel("No patient loaded")
+        self.name_label.setStyleSheet("font-size:18px; font-weight:700; color:#1e3a8a;")
+        details.addWidget(self.name_label)
+
+        self.detail_labels = {}
+        for key, text in [
+            ("Patient ID", "-"),
+            ("Room / Bed", "-"),
+            ("Physician", "-"),
+            ("RFID status", "-"),
+            ("Birth date", "-"),
+        ]:
+            row = QHBoxLayout()
+            k = QLabel(f"{key}:")
+            k.setStyleSheet("font-weight:600; color:#374151;")
+            v = QLabel(text)
+            v.setStyleSheet("color:#111827;")
+            self.detail_labels[key] = v
+            row.addWidget(k)
+            row.addWidget(v)
+            row.addStretch(1)
+            details.addLayout(row)
+        details.addStretch(1)
+        pc.addLayout(details, 1)
+        main.addWidget(patient_card)
+
+        # meds + records
+        mid_row = QHBoxLayout()
+        mid_row.setSpacing(16)
+
+        meds_card = card_frame()
+        mc = QVBoxLayout(meds_card)
+        mc.setContentsMargins(16, 14, 16, 14)
+        mc.addWidget(self._card_title("Medications"))
+        self.meds_text = QTextEdit()
+        self.meds_text.setReadOnly(True)
+        self.meds_text.setPlaceholderText("Medication orders will appear here after a scan.")
+        mc.addWidget(self.meds_text)
+        mid_row.addWidget(meds_card, 1)
+
+        rec_card = card_frame()
+        rc = QVBoxLayout(rec_card)
+        rc.setContentsMargins(16, 14, 16, 14)
+        rc.addWidget(self._card_title("Clinical records"))
+        self.records_text = QTextEdit()
+        self.records_text.setReadOnly(True)
+        self.records_text.setPlaceholderText("Clinical notes will appear here after a scan.")
+        rc.addWidget(self.records_text)
+        mid_row.addWidget(rec_card, 1)
+
+        main.addLayout(mid_row, 1)
+
+        # log card
+        log_card = card_frame()
+        lc = QVBoxLayout(log_card)
+        lc.setContentsMargins(16, 14, 16, 14)
+        lc.addWidget(self._card_title("Activity log"))
+        self.log_text = QTextEdit()
+        self.log_text.setReadOnly(True)
+        lc.addWidget(self.log_text)
+        main.addWidget(log_card, 1)
+
+        root_layout.addWidget(sidebar)
+        root_layout.addLayout(main, 1)
+
+        self.log("Ready. Choose a reader mode and connect.")
+
+    def _section(self, text):
+        lbl = QLabel(text.upper())
+        lbl.setStyleSheet("font-size:10px; font-weight:700; color:#6b7280; letter-spacing:1px; margin-top:6px;")
+        return lbl
+
+    def _card_title(self, text):
+        lbl = QLabel(text)
+        lbl.setStyleSheet("font-size:14px; font-weight:700; color:#1e3a8a; margin-bottom:4px;")
+        return lbl
+
+    def _refresh_ports(self):
+        self.port_combo.clear()
+        if HAS_SERIAL:
+            ports = [p.device for p in serial.tools.list_ports.comports()]
+            self.port_combo.addItems(ports if ports else ["No ports found"])
+        else:
+            self.port_combo.addItem("pyserial not installed")
+
+    def _on_mode_changed(self, text):
+        self.current_mode = "Bluetooth" if text.startswith("Bluetooth") else "Serial"
+        self.serial_widget.setVisible(self.current_mode == "Serial")
+
+    def current_user_id(self):
+        return self.user_map.get(self.user_combo.currentText(), "")
+
+    # ---------------- connection handling ----------------
+    def connect_reader(self):
+        if self.worker is not None and self.worker.isRunning():
+            return
+
+        if self.current_mode == "Bluetooth":
+            if not HAS_BLE:
+                QMessageBox.critical(self, "Missing dependency", "bleak is not installed.\npip install bleak")
+                return
+            self.worker = BleWorker(test_mode=False)
+        else:
+            if not HAS_SERIAL:
+                QMessageBox.critical(self, "Missing dependency", "pyserial is not installed.\npip install pyserial")
+                return
+            port = self.port_combo.currentText()
+            baud = int(self.baud_combo.currentText())
+            self.worker = SerialWorker(port, baud)
+
+        self.worker.status.connect(self._on_status)
+        self.worker.log.connect(self.log)
+        self.worker.finished.connect(self._on_worker_finished)
+        if hasattr(self.worker, "uid"):
+            self.worker.uid.connect(self.process_uid)
+
+        self.connect_btn.setEnabled(False)
+        self.disconnect_btn.setEnabled(True)
+        self.test_btn.setEnabled(False)
+        self.worker.start()
+
+    def test_scan(self):
+        if self.current_mode != "Bluetooth":
+            QMessageBox.information(self, "Test scan", "Test scan is only available in Bluetooth mode.")
+            return
+        if not HAS_BLE:
+            QMessageBox.critical(self, "Missing dependency", "bleak is not installed.\npip install bleak")
+            return
+        if self.worker is not None and self.worker.isRunning():
+            return
+        self.worker = BleWorker(test_mode=True)
+        self.worker.status.connect(self._on_status)
+        self.worker.log.connect(self.log)
+        self.worker.finished.connect(self._on_worker_finished)
+        self.connect_btn.setEnabled(False)
+        self.test_btn.setEnabled(False)
+        self.worker.start()
+
+    def disconnect_reader(self):
+        if self.worker is not None:
+            self.worker.stop()
+            self.disconnect_btn.setEnabled(False)
+
+    def _on_worker_finished(self):
+        self.connect_btn.setEnabled(True)
+        self.test_btn.setEnabled(True)
+        self.disconnect_btn.setEnabled(False)
+        self.worker = None
+
+    def _on_status(self, text):
+        self.status_label.setText(f"Status: {text}")
 
     # ---------------- scan handling ----------------
-    def handle_uid(self, uid):
+    def process_uid(self, uid):
+        uid = (uid or "").strip()
+        if not uid:
+            return
         self.log(f"UID: {uid}")
         save_uid(uid)
         user_id = self.current_user_id()
 
         bundle, msg = get_bundle(uid)
         if bundle is None:
-            self.update_status("Tag not recognized", "red")
+            self.status_label.setText("Tag not recognized")
             self.log(msg)
-            log_scan("", user_id, "Bluetooth", "Unknown tag")
-            messagebox.showwarning("Unknown tag", msg)
+            log_scan("", user_id, self.current_mode, "Unknown tag")
+            QMessageBox.warning(self, "Unknown tag", msg)
             return
 
         p = bundle["patient"]
         tag = bundle["tag"]
-        self.vars["name"].set(p["name"])
-        self.vars["patient_id"].set(p["patient_code"])
-        self.vars["room_bed"].set(f"{p['room']} / {p['bed']}")
-        self.vars["physician"].set(p["attending_physician"])
-        self.vars["rfid_status"].set(tag["status"])
-        self.vars["birth_date"].set(p["birth_date"])
+        self.name_label.setText(p["name"])
+        self.detail_labels["Patient ID"].setText(p["patient_code"])
+        self.detail_labels["Room / Bed"].setText(f"{p['room']} / {p['bed']}")
+        self.detail_labels["Physician"].setText(p["attending_physician"])
+        self.detail_labels["RFID status"].setText(tag["status"])
+        self.detail_labels["Birth date"].setText(p["birth_date"])
 
-        self.show_photo(p["id"])
+        self._set_photo(p["id"])
 
         # medications
         lines = []
@@ -495,24 +661,47 @@ class MediTrackApp:
             status = admin["status"] if admin else "No administration record"
             admin_time = admin["administered_at"] if admin and admin["administered_at"] else "-"
             lines.append(
-                f"{order['medication']} ({order['dose']}, {order['route']})\n"
+                f"{order['medication']}  ({order['dose']}, {order['route']})\n"
                 f"  Schedule: {order['frequency']}\n"
-                f"  Status: {status} | Administered: {admin_time}\n"
+                f"  Status: {status}   |   Administered: {admin_time}\n"
             )
-        self.set_text(self.meds_text, "\n".join(lines) if lines else "No active medication orders.")
+        self.meds_text.setPlainText("\n".join(lines) if lines else "No active medication orders.")
 
-        # clinical records
-        rlines = [f"[{r['record_type']}] {r['note']} ({r['recorded_at']})" for r in bundle["records"]]
-        self.set_text(self.records_text, "\n".join(rlines) if rlines else "No clinical records.")
+        # records
+        rlines = [f"[{r['record_type']}] {r['note']}  ({r['recorded_at']})" for r in bundle["records"]]
+        self.records_text.setPlainText("\n".join(rlines) if rlines else "No clinical records.")
 
-        self.update_status("Patient loaded", "green")
+        self.status_label.setText("Patient loaded")
         self.log(f"Loaded patient: {p['name']} ({p['patient_code']})")
 
-        log_scan(tag["id"], user_id, "Bluetooth", "Success")
+        log_scan(tag["id"], user_id, self.current_mode, "Success")
         log_audit(user_id, "SCAN", "rfid_tag", tag["id"])
         log_audit(user_id, "VIEW", "patient", p["id"])
 
         self.post_result(bundle, uid)
+
+    def _set_photo(self, patient_id):
+        if patient_id is None:
+            self.photo_label.setText("No photo")
+            self.photo_label.setPixmap(QPixmap())
+            return
+        path = None
+        for ext in (".jpg", ".jpeg", ".png"):
+            cand = IMG_DIR / f"patient_{patient_id}{ext}"
+            if cand.exists():
+                path = cand
+                break
+        if path is None:
+            self.photo_label.setText("No photo")
+            self.photo_label.setPixmap(QPixmap())
+            return
+        pix = QPixmap(str(path))
+        if pix.isNull():
+            self.photo_label.setText("Photo error")
+            self.photo_label.setPixmap(QPixmap())
+        else:
+            self.photo_label.setText("")
+            self.photo_label.setPixmap(pix.scaled(180, 180, Qt.KeepAspectRatio, Qt.SmoothTransformation))
 
     def post_result(self, bundle, uid):
         if not SERVER_URL:
@@ -540,9 +729,17 @@ class MediTrackApp:
         except Exception as e:
             self.log(f"POST failed: {e}")
 
+    def log(self, msg):
+        line = f"[{datetime.now().strftime('%H:%M:%S')}] {msg}"
+        self.log_text.append(line)
+        self.log_text.verticalScrollBar().setValue(self.log_text.verticalScrollBar().maximum())
+        print(line)
+
 
 if __name__ == "__main__":
-    root = tk.Tk()
-    app = MediTrackApp(root)
-    root.mainloop()
-PY
+    import sys
+    app = QApplication(sys.argv)
+    app.setFont(QFont("Segoe UI", 10))
+    win = MediTrackWindow()
+    win.show()
+    sys.exit(app.exec_())
