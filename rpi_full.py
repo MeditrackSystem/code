@@ -25,7 +25,7 @@ import traceback
 from datetime import datetime
 from pathlib import Path
 
-from PyQt5.QtCore import Qt, QThread, pyqtSignal
+from PyQt5.QtCore import Qt, QThread, pyqtSignal, QEvent, QTimer
 from PyQt5.QtGui import QFont, QPixmap
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
@@ -341,7 +341,15 @@ class MediTrackWindow(QMainWindow):
         self.worker = None
         self.current_mode = "Bluetooth"
 
+        # Keyboard-wedge (plug-and-play USB RFID) capture
+        self._wedge_buffer = ""
+        self._wedge_timer = QTimer(self)
+        self._wedge_timer.setSingleShot(True)
+        self._wedge_timer.setInterval(250)
+        self._wedge_timer.timeout.connect(self._process_wedge_buffer)
+
         self._build_ui()
+        self.uid_input.returnPressed.connect(lambda: self.process_uid(self.uid_input.text()))
         self._set_photo(None)
 
     def _stylesheet(self):
@@ -729,6 +737,29 @@ class MediTrackWindow(QMainWindow):
         except Exception as e:
             self.log(f"POST failed: {e}")
 
+    def eventFilter(self, obj, event):
+        # Capture keyboard-wedge RFID scans when no text field is focused.
+        if event.type() == QEvent.KeyPress:
+            fw = self.focusWidget()
+            if isinstance(fw, (QLineEdit, QTextEdit, QComboBox)):
+                return super().eventFilter(obj, event)
+            text = event.text()
+            if text:
+                self._wedge_buffer += text
+                self._wedge_timer.start(250)
+                return True
+            if event.key() in (Qt.Key_Return, Qt.Key_Enter):
+                if self._wedge_buffer:
+                    self._process_wedge_buffer()
+                return True
+        return super().eventFilter(obj, event)
+
+    def _process_wedge_buffer(self):
+        data = self._wedge_buffer.strip()
+        self._wedge_buffer = ""
+        if data:
+            self.process_uid(data)
+
     def log(self, msg):
         line = f"[{datetime.now().strftime('%H:%M:%S')}] {msg}"
         self.log_text.append(line)
@@ -741,5 +772,7 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     app.setFont(QFont("Segoe UI", 10))
     win = MediTrackWindow()
+    app.installEventFilter(win)
     win.show()
     sys.exit(app.exec_())
+    
