@@ -31,7 +31,7 @@ from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton, QComboBox, QLineEdit, QTextEdit, QFrame,
     QScrollArea, QMessageBox, QFileDialog, QSizePolicy, QDialog,
-    QDialogButtonBox, QFormLayout, QCheckBox
+    QDialogButtonBox, QFormLayout, QCheckBox, QStackedWidget
 )
 import hashlib
 
