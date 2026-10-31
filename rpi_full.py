@@ -339,7 +339,6 @@ class MediTrackWindow(QMainWindow):
         self.user_map = {f"{u['name']} ({u['role']})": u["id"] for u in self.users}
 
         self.worker = None
-        self.current_mode = "Bluetooth"
 
         # Keyboard-wedge (plug-and-play USB RFID) capture
         self._wedge_buffer = ""
@@ -402,12 +401,6 @@ class MediTrackWindow(QMainWindow):
         sub.setObjectName("subtitle")
         side.addWidget(sub)
 
-        side.addWidget(self._section("Reader mode"))
-        self.mode_combo = QComboBox()
-        self.mode_combo.addItems(["Bluetooth (BLE)", "USB / Serial"])
-        self.mode_combo.currentTextChanged.connect(self._on_mode_changed)
-        side.addWidget(self.mode_combo)
-
         side.addWidget(self._section("Connection"))
         conn_row = QHBoxLayout()
         self.connect_btn = QPushButton("Connect")
@@ -425,26 +418,6 @@ class MediTrackWindow(QMainWindow):
         self.test_btn.clicked.connect(self.test_scan)
         side.addWidget(self.test_btn)
 
-        # serial options
-        self.serial_widget = QWidget()
-        serial_layout = QVBoxLayout(self.serial_widget)
-        serial_layout.setContentsMargins(0, 0, 0, 0)
-        serial_layout.setSpacing(6)
-        serial_layout.addWidget(QLabel("Serial port"))
-        self.port_combo = QComboBox()
-        self._refresh_ports()
-        serial_layout.addWidget(self.port_combo)
-        serial_layout.addWidget(QLabel("Baud rate"))
-        self.baud_combo = QComboBox()
-        self.baud_combo.addItems(["9600", "115200", "38400", "19200"])
-        serial_layout.addWidget(self.baud_combo)
-        refresh_btn = QPushButton("Refresh ports")
-        refresh_btn.setObjectName("secondary")
-        refresh_btn.clicked.connect(self._refresh_ports)
-        serial_layout.addWidget(refresh_btn)
-        self.serial_widget.setVisible(False)
-        side.addWidget(self.serial_widget)
-
         side.addWidget(self._section("Logged-in user"))
         self.user_combo = QComboBox()
         self.user_combo.addItems(list(self.user_map.keys()))
@@ -456,7 +429,7 @@ class MediTrackWindow(QMainWindow):
         self.uid_input.setPlaceholderText("Enter RFID UID")
         manual_row.addWidget(self.uid_input)
         lookup_btn = QPushButton("Lookup")
-        lookup_btn.clicked.connect(lambda: self.process_uid(self.uid_input.text()))
+        lookup_btn.clicked.connect(lambda: self.process_uid(self.uid_input.text(), "Manual"))
         manual_row.addWidget(lookup_btn)
         side.addLayout(manual_row)
 
@@ -560,18 +533,6 @@ class MediTrackWindow(QMainWindow):
         lbl.setStyleSheet("font-size:14px; font-weight:700; color:#1e3a8a; margin-bottom:4px;")
         return lbl
 
-    def _refresh_ports(self):
-        self.port_combo.clear()
-        if HAS_SERIAL:
-            ports = [p.device for p in serial.tools.list_ports.comports()]
-            self.port_combo.addItems(ports if ports else ["No ports found"])
-        else:
-            self.port_combo.addItem("pyserial not installed")
-
-    def _on_mode_changed(self, text):
-        self.current_mode = "Bluetooth" if text.startswith("Bluetooth") else "Serial"
-        self.serial_widget.setVisible(self.current_mode == "Serial")
-
     def current_user_id(self):
         return self.user_map.get(self.user_combo.currentText(), "")
 
@@ -579,35 +540,20 @@ class MediTrackWindow(QMainWindow):
     def connect_reader(self):
         if self.worker is not None and self.worker.isRunning():
             return
-
-        if self.current_mode == "Bluetooth":
-            if not HAS_BLE:
-                QMessageBox.critical(self, "Missing dependency", "bleak is not installed.\npip install bleak")
-                return
-            self.worker = BleWorker(test_mode=False)
-        else:
-            if not HAS_SERIAL:
-                QMessageBox.critical(self, "Missing dependency", "pyserial is not installed.\npip install pyserial")
-                return
-            port = self.port_combo.currentText()
-            baud = int(self.baud_combo.currentText())
-            self.worker = SerialWorker(port, baud)
-
+        if not HAS_BLE:
+            QMessageBox.critical(self, "Missing dependency", "bleak is not installed.\npip install bleak")
+            return
+        self.worker = BleWorker(test_mode=False)
         self.worker.status.connect(self._on_status)
         self.worker.log.connect(self.log)
         self.worker.finished.connect(self._on_worker_finished)
-        if hasattr(self.worker, "uid"):
-            self.worker.uid.connect(self.process_uid)
-
+        self.worker.uid.connect(lambda u: self.process_uid(u, "Bluetooth"))
         self.connect_btn.setEnabled(False)
         self.disconnect_btn.setEnabled(True)
         self.test_btn.setEnabled(False)
         self.worker.start()
 
     def test_scan(self):
-        if self.current_mode != "Bluetooth":
-            QMessageBox.information(self, "Test scan", "Test scan is only available in Bluetooth mode.")
-            return
         if not HAS_BLE:
             QMessageBox.critical(self, "Missing dependency", "bleak is not installed.\npip install bleak")
             return
@@ -636,10 +582,12 @@ class MediTrackWindow(QMainWindow):
         self.status_label.setText(f"Status: {text}")
 
     # ---------------- scan handling ----------------
-    def process_uid(self, uid):
+    def process_uid(self, uid, reader_type=None):
         uid = (uid or "").strip()
         if not uid:
             return
+        if reader_type is None:
+            reader_type = "Keyboard Wedge"
         self.log(f"UID: {uid}")
         save_uid(uid)
         user_id = self.current_user_id()
@@ -648,7 +596,7 @@ class MediTrackWindow(QMainWindow):
         if bundle is None:
             self.status_label.setText("Tag not recognized")
             self.log(msg)
-            log_scan("", user_id, self.current_mode, "Unknown tag")
+            log_scan("", user_id, reader_type, "Unknown tag")
             QMessageBox.warning(self, "Unknown tag", msg)
             return
 
@@ -682,7 +630,7 @@ class MediTrackWindow(QMainWindow):
         self.status_label.setText("Patient loaded")
         self.log(f"Loaded patient: {p['name']} ({p['patient_code']})")
 
-        log_scan(tag["id"], user_id, self.current_mode, "Success")
+        log_scan(tag["id"], user_id, reader_type, "Success")
         log_audit(user_id, "SCAN", "rfid_tag", tag["id"])
         log_audit(user_id, "VIEW", "patient", p["id"])
 
