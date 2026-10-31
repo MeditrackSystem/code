@@ -525,8 +525,7 @@ class MediTrackWindow(QMainWindow):
         # Current user
         side.addWidget(self._section("Signed in"))
         user_name = self.current_user.get("name", "Unknown")
-        user_role = self.current_user.get("role", "")
-        self.current_user_label = QLabel(f"{user_name}\n{user_role}")
+        self.current_user_label = QLabel(user_name)
         self.current_user_label.setStyleSheet("font-weight:600; color:#1e3a8a;")
         side.addWidget(self.current_user_label)
 
