@@ -26,12 +26,13 @@ from datetime import datetime
 from pathlib import Path
 
 from PyQt5.QtCore import Qt, QThread, pyqtSignal, QEvent, QTimer
-from PyQt5.QtGui import QFont, QPixmap
+from PyQt5.QtGui import QFont, QPixmap, QColor
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton, QComboBox, QLineEdit, QTextEdit, QFrame,
     QScrollArea, QMessageBox, QFileDialog, QSizePolicy, QDialog,
-    QDialogButtonBox, QFormLayout, QCheckBox, QStackedWidget
+    QDialogButtonBox, QFormLayout, QCheckBox, QStackedWidget,
+    QGraphicsDropShadowEffect
 )
 import hashlib
 
@@ -323,9 +324,14 @@ def card_frame():
         QFrame#card {
             background: white;
             border: 1px solid #e5e7eb;
-            border-radius: 14px;
+            border-radius: 16px;
         }
     """)
+    shadow = QGraphicsDropShadowEffect()
+    shadow.setBlurRadius(24)
+    shadow.setOffset(0, 6)
+    shadow.setColor(QColor(0, 0, 0, 35))
+    f.setGraphicsEffect(shadow)
     return f
 
 
@@ -455,28 +461,39 @@ class ScanAnimationWidget(QWidget):
         self.update()
 
     def paintEvent(self, event):
-        from PyQt5.QtGui import QPainter, QColor, QPen
+        from PyQt5.QtGui import QPainter, QColor, QPen, QRadialGradient
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
         cx = self.width() // 2
         cy = self.height() // 2
-        maxr = min(cx, cy) - 10
-        # outer rings
-        for i in range(4):
-            r = int(maxr * (0.35 + 0.2 * i) + 8 * ( (self._phase/360.0) ))
-            alpha = max(40, 220 - i * 45)
+        maxr = min(cx, cy) - 8
+
+        # pulsing background glow
+        grad = QRadialGradient(cx, cy, maxr)
+        grad.setColorAt(0, QColor(37, 99, 235, 60))
+        grad.setColorAt(1, QColor(37, 99, 235, 0))
+        painter.setBrush(grad)
+        painter.setPen(Qt.NoPen)
+        painter.drawEllipse(cx - maxr, cy - maxr, 2 * maxr, 2 * maxr)
+
+        # animated rings
+        for i in range(5):
+            progress = (self._phase + i * 72) % 360 / 360.0
+            r = int(maxr * (0.2 + 0.75 * progress))
+            alpha = int(220 * (1 - progress))
             pen = QPen(QColor(37, 99, 235, alpha))
             pen.setWidth(3)
             painter.setPen(pen)
             painter.setBrush(Qt.NoBrush)
             painter.drawEllipse(cx - r, cy - r, 2 * r, 2 * r)
-        # center dot
+
+        # center
         painter.setPen(Qt.NoPen)
         painter.setBrush(QColor(30, 58, 138))
-        painter.drawEllipse(cx - 18, cy - 18, 36, 36)
+        painter.drawEllipse(cx - 26, cy - 26, 52, 52)
         painter.setPen(QColor("white"))
         painter.setFont(QFont("Segoe UI", 12, QFont.Bold))
-        painter.drawText(cx - 18, cy - 18, 36, 36, Qt.AlignCenter, "RFID")
+        painter.drawText(cx - 26, cy - 26, 52, 52, Qt.AlignCenter, "RFID")
 
 # --------------------------- Main window ---------------------------
 class MediTrackWindow(QMainWindow):
@@ -507,14 +524,28 @@ class MediTrackWindow(QMainWindow):
 
     def _stylesheet(self):
         return """
-        QMainWindow { background: #f3f6fb; }
+        QMainWindow {
+            background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                stop:0 #eaf2ff, stop:1 #f7faff);
+        }
         QLabel { color: #1f2937; font-size: 18px; }
-        QLabel#title { color: #1e3a8a; font-size: 28px; font-weight: 700; }
-        QLabel#subtitle { color: #6b7280; font-size: 16px; }
-        QLabel#status { font-size: 18px; font-weight: 600; }
-        QPushButton { font-size: 16px; }
-        QCheckBox { font-size: 16px; }
-        QLineEdit { font-size: 16px; }
+        QLabel#title { color: #1e3a8a; font-size: 30px; font-weight: 800; }
+        QLabel#subtitle { color: #64748b; font-size: 16px; }
+        QLabel#status { font-size: 18px; font-weight: 600; color: #2563eb; }
+        QPushButton {
+            font-size: 16px; background: #2563eb; color: white;
+            border: none; border-radius: 12px; padding: 10px 20px;
+            font-weight: 600;
+        }
+        QPushButton:hover { background: #1d4ed8; }
+        QPushButton:pressed { background: #1e40af; }
+        QPushButton#secondary {
+            background: white; color: #2563eb; border: 1px solid #bfdbfe;
+        }
+        QPushButton#secondary:hover { background: #eff6ff; }
+        QCheckBox { font-size: 16px; color: #1f2937; }
+        QLineEdit { font-size: 16px; border-radius: 10px; padding: 8px; }
+        QTextEdit { font-size: 16px; border-radius: 12px; }
         QPushButton {
             background: #2563eb; color: white; border: none;
             border-radius: 10px; padding: 9px 16px; font-weight: 600;
