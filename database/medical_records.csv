@@ -1,0 +1,3 @@
+id,patient_id,clinician_id,record_type,note,recorded_at
+1,1,2,Diagnosis,Hypertension; on maintenance medication.,2026-10-31T09:00:00
+2,1,2,Allergy,No known drug allergies (NKDA).,2026-10-31T09:05:00

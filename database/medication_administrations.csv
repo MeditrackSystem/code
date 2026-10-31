@@ -1,0 +1,3 @@
+id,order_id,scheduled_at,administered_at,status,administered_by,notes
+1,1,2026-10-31T08:00:00,2026-10-31T08:05:00,Given,3,Administered with water; tolerated well.
+2,2,2026-10-31T14:00:00,,Pending,,

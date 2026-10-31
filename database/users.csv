@@ -1,0 +1,5 @@
+id,employee_id,name,username,password_hash,role,status
+1,U001,System Administrator,admin,$2b$12$samplehashadmin,Administrator,Active
+2,U002,Dr. Maria Santos,maria.santos,$2b$12$samplehashdoctor,Doctor,Active
+3,U003,Nurse Joy Reyes,nurse.joy,$2b$12$samplehashnurse,Nurse,Active
+4,U004,Read-Only Staff,staff.readonly,$2b$12$samplehashreadonly,Read-only staff,Active

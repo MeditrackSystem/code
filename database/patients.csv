@@ -1,0 +1,2 @@
+id,patient_code,name,birth_date,room,bed,attending_physician,admission_status
+1,PAT-2026-001,Juan Dela Cruz,1985-05-12,201,A,Dr. Maria Santos,Admitted
