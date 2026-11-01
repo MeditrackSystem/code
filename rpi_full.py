@@ -21,6 +21,8 @@ import threading
 if os.name == "posix":
     # Force X11 even if the session defaults to Wayland
     os.environ["QT_QPA_PLATFORM"] = "xcb"
+    # Avoid GTK/GObject style warnings on Raspberry Pi
+    os.environ.setdefault("QT_STYLE_OVERRIDE", "Fusion")
 import traceback
 from datetime import datetime
 from pathlib import Path
