@@ -17,9 +17,6 @@ import hashlib
 import os
 import threading
 import traceback
-
-# Force X11 on Wayland systems (fixes input issues with PyQt5)
-os.environ.setdefault("QT_QPA_PLATFORM", "xcb")
 from datetime import datetime
 from pathlib import Path
 
@@ -150,30 +147,11 @@ def save_uid(uid):
         print("log write failed:", e)
 
 
-# --------------------------- Card frame helper ---------------------------
-def card_frame():
-    frame = QFrame()
-    frame.setObjectName("card")
-    frame.setStyleSheet("""
-        QFrame#card {
-            background: white;
-            border: none;
-            border-radius: 14px;
-        }
-    """)
-    shadow = QGraphicsDropShadowEffect()
-    shadow.setBlurRadius(30)
-    shadow.setOffset(0, 6)
-    shadow.setColor(QColor(0, 0, 0, 35))
-    frame.setGraphicsEffect(shadow)
-    return frame
-
-
 # --------------------------- Toggle switch ---------------------------
 class ToggleSwitch(QCheckBox):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setFixedSize(72, 38)
+        self.setFixedSize(52, 28)
         self.setCursor(Qt.PointingHandCursor)
 
     def paintEvent(self, event):
@@ -182,7 +160,7 @@ class ToggleSwitch(QCheckBox):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
         w, h = self.width(), self.height()
-        bg = QColor("#16A34A") if self.isChecked() else QColor("#CBD5E1")
+        bg = QColor("#2563EB") if self.isChecked() else QColor("#CBD5E1")
         painter.setBrush(QBrush(bg))
         painter.setPen(Qt.NoPen)
         painter.drawRoundedRect(0, 0, w, h, h // 2, h // 2)
@@ -196,7 +174,7 @@ class ToggleSwitch(QCheckBox):
 class ScanAnimationWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setMinimumSize(280, 280)
+        self.setMinimumSize(220, 220)
         self._phase = 0
         self.timer = QTimer(self)
         self.timer.timeout.connect(self._tick)
@@ -233,10 +211,10 @@ class ScanAnimationWidget(QWidget):
 
         painter.setPen(Qt.NoPen)
         painter.setBrush(QColor(20, 43, 74))
-        painter.drawEllipse(cx - 30, cy - 30, 60, 60)
+        painter.drawEllipse(cx - 24, cy - 24, 48, 48)
         painter.setPen(QColor("white"))
-        painter.setFont(QFont("Segoe UI", 14, QFont.Bold))
-        painter.drawText(cx - 30, cy - 30, 60, 60, Qt.AlignCenter, "RFID")
+        painter.setFont(QFont("Segoe UI", 10, QFont.Bold))
+        painter.drawText(cx - 24, cy - 24, 48, 48, Qt.AlignCenter, "RFID")
 
 
 # --------------------------- Auto BLE worker ---------------------------
@@ -312,92 +290,68 @@ class LoginDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle("MediTrack Login")
         self.setModal(True)
-        self.setWindowFlags(Qt.Window | Qt.FramelessWindowHint)
-        self.showFullScreen()
+        self.setWindowState(Qt.WindowFullScreen)
         self.user = None
 
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
         outer.setAlignment(Qt.AlignCenter)
-        self.setStyleSheet("""
-            QDialog { background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #EBF2FF, stop:1 #F8FAFF); }
-            QLineEdit {
-                border: 2px solid #E2E8F0; border-radius: 12px;
-                padding: 14px 16px; background: #F8FAFC; font-size: 22px;
-                color: #1E293B;
-            }
-            QLineEdit:focus {
-                border: 2px solid #2563EB; background: white;
-            }
-            QPushButton#loginBtn {
-                font-size: 24px; background: #2563EB; color: white;
-                border: none; border-radius: 12px; padding: 16px 24px;
-                font-weight: 700;
-            }
-            QPushButton#loginBtn:hover { background: #1D4ED8; }
-            QPushButton#loginBtn:pressed { background: #1E40AF; }
-        """)
+        self.setStyleSheet("QDialog { background: #F4F7FB; }")
 
         card = QFrame()
-        card.setFixedWidth(560)
+        card.setFixedWidth(500)
         card.setStyleSheet("""
             QFrame {
                 background: white;
-                border: none;
-                border-radius: 20px;
+                border: 1px solid #E2E8F0;
+                border-radius: 16px;
             }
         """)
         shadow = QGraphicsDropShadowEffect()
-        shadow.setBlurRadius(40)
-        shadow.setOffset(0, 10)
-        shadow.setColor(QColor(37, 99, 235, 40))
+        shadow.setBlurRadius(30)
+        shadow.setOffset(0, 8)
+        shadow.setColor(QColor(0, 0, 0, 30))
         card.setGraphicsEffect(shadow)
 
         cl = QVBoxLayout(card)
-        cl.setContentsMargins(48, 48, 48, 48)
-        cl.setSpacing(18)
+        cl.setContentsMargins(40, 40, 40, 40)
+        cl.setSpacing(16)
 
         logo_pix = QPixmap(str(BASE_DIR / "logo.png"))
         if not logo_pix.isNull():
             logo_lbl = QLabel()
             logo_lbl.setPixmap(logo_pix.scaled(96, 96, Qt.KeepAspectRatio, Qt.SmoothTransformation))
             logo_lbl.setAlignment(Qt.AlignCenter)
-            logo_lbl.setStyleSheet("border:none; background:transparent;")
             cl.addWidget(logo_lbl)
 
         title = QLabel("MediTrack")
-        title.setStyleSheet("font-size:42px; font-weight:800; color:#1E3A5F; border:none; background:transparent;")
+        title.setStyleSheet("font-size:32px; font-weight:800; color:#142B4A;")
         title.setAlignment(Qt.AlignCenter)
         cl.addWidget(title)
 
         sub = QLabel("Hospital Management System")
-        sub.setStyleSheet("font-size:22px; color:#64748B; border:none; background:transparent;")
+        sub.setStyleSheet("font-size:16px; color:#64748B;")
         sub.setAlignment(Qt.AlignCenter)
         cl.addWidget(sub)
 
-        cl.addSpacing(8)
-
         self.username_input = QLineEdit()
-        self.username_input.setPlaceholderText("  Username")
-        self.username_input.setMinimumHeight(58)
+        self.username_input.setPlaceholderText("Username")
+        self.username_input.setMinimumHeight(48)
         cl.addWidget(self.username_input)
 
         self.password_input = QLineEdit()
-        self.password_input.setPlaceholderText("  Password")
+        self.password_input.setPlaceholderText("Password")
         self.password_input.setEchoMode(QLineEdit.Password)
-        self.password_input.setMinimumHeight(58)
+        self.password_input.setMinimumHeight(48)
         cl.addWidget(self.password_input)
 
-        cl.addSpacing(4)
-
         login_btn = QPushButton("Sign In")
-        login_btn.setObjectName("loginBtn")
-        login_btn.setMinimumHeight(58)
+        login_btn.setMinimumHeight(48)
         login_btn.clicked.connect(self.try_login)
         cl.addWidget(login_btn)
 
         self.status = QLabel("")
-        self.status.setStyleSheet("color:#DC2626; font-size:20px; border:none; background:transparent;")
+        self.status.setStyleSheet("color:#DC2626; font-size:14px;")
         self.status.setAlignment(Qt.AlignCenter)
         cl.addWidget(self.status)
 
@@ -446,41 +400,33 @@ class MediTrackWindow(QMainWindow):
 
     def _stylesheet(self):
         return """
-        QMainWindow { background: #EFF4FB; }
-        QLabel { color: #1E293B; font-size: 22px; }
-        QLabel#title { color: #1E3A5F; font-size: 34px; font-weight: 800; }
-        QLabel#subtitle { color: #64748B; font-size: 20px; }
-        QLabel#status { font-size: 22px; font-weight: 600; color: #2563EB; }
+        QMainWindow { background: #F4F7FB; }
+        QLabel { color: #1E293B; font-size: 18px; }
+        QLabel#title { color: #142B4A; font-size: 28px; font-weight: 800; }
+        QLabel#subtitle { color: #64748B; font-size: 14px; }
+        QLabel#status { font-size: 16px; font-weight: 600; color: #2563EB; }
         QPushButton {
-            font-size: 22px; background: #2563EB; color: white;
-            border: none; border-radius: 12px; padding: 14px 24px;
+            font-size: 18px; background: #2563EB; color: white;
+            border: none; border-radius: 10px; padding: 10px 20px;
             font-weight: 600;
         }
         QPushButton:hover { background: #1D4ED8; }
         QPushButton:pressed { background: #1E40AF; }
         QPushButton:disabled { background: #94A3B8; color: #F8FAFC; }
         QPushButton#secondary {
-            background: white; color: #2563EB; border: 2px solid #DBEAFE;
+            background: white; color: #2563EB; border: 1px solid #E2E8F0;
         }
-        QPushButton#secondary:hover { background: #EFF6FF; }
-        QPushButton#scanAgainBtn {
-            font-size: 24px; background: #2563EB; color: white;
-            border: none; border-radius: 12px; padding: 16px 32px;
-            font-weight: 700;
-        }
-        QPushButton#scanAgainBtn:hover { background: #1D4ED8; }
-        QPushButton#scanAgainBtn:pressed { background: #1E40AF; }
+        QPushButton#secondary:hover { background: #F8FAFC; }
         QLineEdit {
-            border: 2px solid #E2E8F0; border-radius: 10px;
-            padding: 12px 14px; background: white; font-size: 22px;
+            border: 1px solid #CBD5E1; border-radius: 10px;
+            padding: 10px 12px; background: white; font-size: 18px;
         }
-        QLineEdit:focus { border: 2px solid #2563EB; }
         QTextEdit {
-            background: white; border: 2px solid #E2E8F0;
-            border-radius: 10px; padding: 10px; font-size: 22px;
+            background: white; border: 1px solid #CBD5E1;
+            border-radius: 10px; padding: 8px; font-size: 16px;
         }
         QFrame#card {
-            background: white; border: none;
+            background: white; border: 1px solid #E2E8F0;
             border-radius: 14px;
         }
         QScrollArea { border: none; background: transparent; }
@@ -495,8 +441,8 @@ class MediTrackWindow(QMainWindow):
 
         # ---------- Top bar ----------
         topbar = QFrame()
-        topbar.setStyleSheet("background: white;")
-        topbar.setFixedHeight(80)
+        topbar.setStyleSheet("background: white; border-bottom: 1px solid #E2E8F0;")
+        topbar.setFixedHeight(64)
         tb = QHBoxLayout(topbar)
         tb.setContentsMargins(24, 0, 24, 0)
         tb.setSpacing(16)
@@ -504,16 +450,16 @@ class MediTrackWindow(QMainWindow):
         logo_pix = QPixmap(str(BASE_DIR / "logo.png"))
         if not logo_pix.isNull():
             logo_img = QLabel()
-            logo_img.setPixmap(logo_pix.scaled(48, 48, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+            logo_img.setPixmap(logo_pix.scaled(36, 36, Qt.KeepAspectRatio, Qt.SmoothTransformation))
             tb.addWidget(logo_img)
 
         app_title = QLabel("MediTrack")
-        app_title.setStyleSheet("font-size:28px; font-weight:700; color:#142B4A;")
+        app_title.setStyleSheet("font-size:22px; font-weight:700; color:#142B4A;")
         tb.addWidget(app_title)
         tb.addStretch(1)
 
         self.current_user_label = QLabel(self.current_user.get("name", "Unknown"))
-        self.current_user_label.setStyleSheet("font-size:22px; font-weight:600; color:#1E293B;")
+        self.current_user_label.setStyleSheet("font-size:16px; font-weight:600; color:#1E293B;")
         tb.addWidget(self.current_user_label)
 
         logout_btn = QPushButton("Logout")
@@ -525,14 +471,14 @@ class MediTrackWindow(QMainWindow):
 
         # ---------- Main content ----------
         main_wrapper = QWidget()
-        main_wrapper.setStyleSheet("background: #EFF4FB;")
+        main_wrapper.setStyleSheet("background: #F4F7FB;")
         main_layout = QHBoxLayout(main_wrapper)
         main_layout.setContentsMargins(24, 24, 24, 24)
         main_layout.setSpacing(24)
 
         # Sidebar
         sidebar = card_frame()
-        sidebar.setFixedWidth(320)
+        sidebar.setFixedWidth(260)
         side = QVBoxLayout(sidebar)
         side.setContentsMargins(20, 20, 20, 20)
         side.setSpacing(14)
@@ -540,18 +486,18 @@ class MediTrackWindow(QMainWindow):
         side.addWidget(self._section("Wireless Sensor"))
         toggle_row = QHBoxLayout()
         toggle_label = QLabel("Bluetooth")
-        toggle_label.setStyleSheet("font-size:22px; font-weight:600; color:#1E293B;")
+        toggle_label.setStyleSheet("font-size:16px; font-weight:600; color:#1E293B;")
         toggle_label.setCursor(Qt.PointingHandCursor)
         toggle_label.mousePressEvent = lambda e: self.bt_toggle.toggle()
         toggle_row.addWidget(toggle_label)
 
         touch_area = QWidget()
-        touch_area.setFixedSize(100, 48)
+        touch_area.setFixedSize(80, 36)
         touch_area.setCursor(Qt.PointingHandCursor)
         ta_layout = QHBoxLayout(touch_area)
         ta_layout.setContentsMargins(12, 4, 12, 4)
         self.bt_toggle = ToggleSwitch()
-        self.bt_toggle.setFixedSize(72, 38)
+        self.bt_toggle.setFixedSize(48, 24)
         self.bt_toggle.toggled.connect(self._on_bt_toggle)
         ta_layout.addWidget(self.bt_toggle, 0, Qt.AlignCenter)
         touch_area.mousePressEvent = lambda e: self.bt_toggle.toggle()
@@ -560,11 +506,11 @@ class MediTrackWindow(QMainWindow):
         side.addLayout(toggle_row)
 
         self.rfid_status_indicator = QLabel("● Waiting for scan")
-        self.rfid_status_indicator.setStyleSheet("color:#64748B; font-weight:600; font-size:20px;")
+        self.rfid_status_indicator.setStyleSheet("color:#64748B; font-weight:600; font-size:14px;")
         side.addWidget(self.rfid_status_indicator)
 
         self.status_label = QLabel("Status: Bluetooth off")
-        self.status_label.setStyleSheet("color:#2563EB; font-size:22px; font-weight:600;")
+        self.status_label.setStyleSheet("color:#2563EB; font-size:16px; font-weight:600;")
         side.addWidget(self.status_label)
 
         side.addStretch(1)
@@ -576,28 +522,28 @@ class MediTrackWindow(QMainWindow):
 
         # Front / scan page
         front = QWidget()
-        front.setStyleSheet("background: transparent;")
+        front.setStyleSheet("background: #F4F7FB;")
         front_layout = QVBoxLayout(front)
         front_layout.setContentsMargins(40, 40, 40, 40)
         front_layout.setSpacing(20)
         front_layout.addStretch(1)
 
         front_title = QLabel("Ready to Scan")
-        front_title.setStyleSheet("font-size:44px; font-weight:700; color:#1E3A5F;")
+        front_title.setStyleSheet("font-size:36px; font-weight:700; color:#142B4A;")
         front_title.setAlignment(Qt.AlignCenter)
         front_layout.addWidget(front_title)
 
         front_sub = QLabel("Scan an RFID wristband to view patient information")
-        front_sub.setStyleSheet("font-size:24px; color:#64748B;")
+        front_sub.setStyleSheet("font-size:18px; color:#64748B;")
         front_sub.setAlignment(Qt.AlignCenter)
         front_layout.addWidget(front_sub)
 
         self.scan_anim = ScanAnimationWidget()
-        self.scan_anim.setFixedSize(300, 300)
+        self.scan_anim.setFixedSize(240, 240)
         front_layout.addWidget(self.scan_anim, 0, Qt.AlignCenter)
 
         self.front_status = QLabel("Waiting for scan...")
-        self.front_status.setStyleSheet("font-size:26px; font-weight:600; color:#2563EB;")
+        self.front_status.setStyleSheet("font-size:20px; font-weight:600; color:#2563EB;")
         self.front_status.setAlignment(Qt.AlignCenter)
         front_layout.addWidget(self.front_status)
 
@@ -606,9 +552,9 @@ class MediTrackWindow(QMainWindow):
 
         # Result page
         result = QWidget()
-        result.setStyleSheet("background: transparent;")
+        result.setStyleSheet("background: #F4F7FB;")
         result_layout = QVBoxLayout(result)
-        result_layout.setContentsMargins(0, 0, 0, 12)
+        result_layout.setContentsMargins(0, 0, 0, 0)
         result_layout.setSpacing(16)
 
         # Patient profile card
@@ -618,15 +564,15 @@ class MediTrackWindow(QMainWindow):
         pc.setSpacing(24)
 
         self.photo_label = QLabel("No photo")
-        self.photo_label.setFixedSize(180, 180)
+        self.photo_label.setFixedSize(150, 150)
         self.photo_label.setAlignment(Qt.AlignCenter)
-        self.photo_label.setStyleSheet("background:#DBEAFE; border-radius:90px; color:#2563EB; font-weight:600; font-size:20px;")
+        self.photo_label.setStyleSheet("background:#F1F5F9; border-radius:75px; color:#2563EB; font-weight:600; font-size:14px;")
         pc.addWidget(self.photo_label, 0, Qt.AlignTop)
 
         details = QVBoxLayout()
         details.setSpacing(8)
         self.name_label = QLabel("No patient loaded")
-        self.name_label.setStyleSheet("font-size:34px; font-weight:700; color:#1E3A5F;")
+        self.name_label.setStyleSheet("font-size:28px; font-weight:700; color:#142B4A;")
         details.addWidget(self.name_label)
 
         self.detail_labels = {}
@@ -639,9 +585,9 @@ class MediTrackWindow(QMainWindow):
         ]:
             row = QHBoxLayout()
             k = QLabel(f"{key}:")
-            k.setStyleSheet("font-weight:600; color:#374151; font-size:22px;")
+            k.setStyleSheet("font-weight:600; color:#374151; font-size:16px;")
             v = QLabel(text)
-            v.setStyleSheet("color:#1E293B; font-size:22px;")
+            v.setStyleSheet("color:#1E293B; font-size:16px;")
             self.detail_labels[key] = v
             row.addWidget(k)
             row.addWidget(v)
@@ -687,12 +633,10 @@ class MediTrackWindow(QMainWindow):
 
         result_layout.addLayout(mid_row, 1)
 
-        scan_again_btn = QPushButton("⟲  Scan Again")
-        scan_again_btn.setObjectName("scanAgainBtn")
-        scan_again_btn.setMinimumHeight(60)
-        scan_again_btn.setCursor(Qt.PointingHandCursor)
+        scan_again_btn = QPushButton("Scan Again")
+        scan_again_btn.setMinimumHeight(40)
         scan_again_btn.clicked.connect(self.back_to_front)
-        result_layout.addWidget(scan_again_btn)
+        result_layout.addWidget(scan_again_btn, 0, Qt.AlignRight)
 
         self.stack.addWidget(result)
 
@@ -701,12 +645,12 @@ class MediTrackWindow(QMainWindow):
 
     def _section(self, text):
         lbl = QLabel(text.upper())
-        lbl.setStyleSheet("font-size:18px; font-weight:700; color:#64748B; letter-spacing:1px; margin-top:6px;")
+        lbl.setStyleSheet("font-size:12px; font-weight:700; color:#64748B; letter-spacing:1px; margin-top:6px;")
         return lbl
 
     def _card_title(self, text):
         lbl = QLabel(text)
-        lbl.setStyleSheet("font-size:24px; font-weight:700; color:#142B4A; margin-bottom:4px;")
+        lbl.setStyleSheet("font-size:18px; font-weight:700; color:#142B4A; margin-bottom:4px;")
         return lbl
 
     def _refresh_ports(self):
@@ -752,9 +696,9 @@ class MediTrackWindow(QMainWindow):
         if bundle is None:
             self.status_label.setText("Tag not recognized")
             self.rfid_status_indicator.setText("● Unknown RFID tag")
-            self.rfid_status_indicator.setStyleSheet("color:#DC2626; font-weight:600; font-size:20px;")
+            self.rfid_status_indicator.setStyleSheet("color:#DC2626; font-weight:600; font-size:14px;")
             self.front_status.setText("Unrecognized RFID tag")
-            self.front_status.setStyleSheet("font-size:26px; font-weight:600; color:#DC2626;")
+            self.front_status.setStyleSheet("font-size:20px; font-weight:600; color:#DC2626;")
             self.stack.setCurrentIndex(0)
             self.log(msg)
             log_scan("", user_id, reader_type, "Unknown tag")
@@ -780,7 +724,7 @@ class MediTrackWindow(QMainWindow):
 
         self.status_label.setText("Patient loaded")
         self.rfid_status_indicator.setText("● Patient recognized")
-        self.rfid_status_indicator.setStyleSheet("color:#16A34A; font-weight:600; font-size:20px;")
+        self.rfid_status_indicator.setStyleSheet("color:#16A34A; font-weight:600; font-size:14px;")
         self.log(f"Loaded patient: {p['name']} ({p['patient_code']})")
 
         if uid:
@@ -822,7 +766,7 @@ class MediTrackWindow(QMainWindow):
         meds = bundle.get("meds", [])
         if not meds:
             lbl = QLabel("No active medication orders.")
-            lbl.setStyleSheet("color:#64748B; font-size:20px;")
+            lbl.setStyleSheet("color:#64748B; font-size:14px;")
             self.meds_layout.addWidget(lbl)
             self.meds_layout.addStretch(1)
             return
@@ -835,12 +779,12 @@ class MediTrackWindow(QMainWindow):
             cl = QVBoxLayout(card)
             cl.setSpacing(4)
             name = QLabel(order["medication"])
-            name.setStyleSheet("font-weight:700; font-size:22px; color:#142B4A;")
+            name.setStyleSheet("font-weight:700; font-size:16px; color:#142B4A;")
             cl.addWidget(name)
             cl.addWidget(QLabel(f"Dose: {order['dose']}   |   Route: {order['route']}"))
             cl.addWidget(QLabel(f"Schedule: {order['frequency']}"))
             badge = QLabel(status.upper())
-            badge.setStyleSheet(f"background:{color}; color:white; border-radius:8px; padding:4px 12px; font-size:18px; font-weight:700;")
+            badge.setStyleSheet(f"background:{color}; color:white; border-radius:6px; padding:2px 8px; font-size:11px; font-weight:700;")
             badge.setAlignment(Qt.AlignCenter)
             cl.addWidget(badge)
             cl.addWidget(QLabel(f"Administered: {admin_time}"))
@@ -852,7 +796,7 @@ class MediTrackWindow(QMainWindow):
         records = bundle.get("records", [])
         if not records:
             lbl = QLabel("No clinical records.")
-            lbl.setStyleSheet("color:#64748B; font-size:20px;")
+            lbl.setStyleSheet("color:#64748B; font-size:14px;")
             self.records_layout.addWidget(lbl)
             self.records_layout.addStretch(1)
             return
@@ -863,7 +807,7 @@ class MediTrackWindow(QMainWindow):
             cl = QVBoxLayout(card)
             cl.setSpacing(4)
             title = QLabel(rtype)
-            title.setStyleSheet("font-weight:700; font-size:22px; color:#2563EB;")
+            title.setStyleSheet("font-weight:700; font-size:16px; color:#2563EB;")
             cl.addWidget(title)
             cl.addWidget(QLabel(r.get("note", "")))
             cl.addWidget(QLabel(f"Date: {r.get('recorded_at', '')}"))
@@ -878,9 +822,9 @@ class MediTrackWindow(QMainWindow):
         self._clear_layout(self.meds_layout)
         self._clear_layout(self.records_layout)
         self.front_status.setText("Waiting for scan...")
-        self.front_status.setStyleSheet("font-size:26px; font-weight:600; color:#2563EB;")
+        self.front_status.setStyleSheet("font-size:20px; font-weight:600; color:#2563EB;")
         self.rfid_status_indicator.setText("● Waiting for scan")
-        self.rfid_status_indicator.setStyleSheet("color:#64748B; font-weight:600; font-size:20px;")
+        self.rfid_status_indicator.setStyleSheet("color:#64748B; font-weight:600; font-size:14px;")
         self.stack.setCurrentIndex(0)
 
     def _set_photo(self, patient_id):
@@ -904,7 +848,7 @@ class MediTrackWindow(QMainWindow):
             self.photo_label.setPixmap(QPixmap())
         else:
             self.photo_label.setText("")
-            self.photo_label.setPixmap(pix.scaled(180, 180, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+            self.photo_label.setPixmap(pix.scaled(150, 150, Qt.KeepAspectRatio, Qt.SmoothTransformation))
 
     def post_result(self, bundle, uid):
         if not SERVER_URL:
@@ -963,8 +907,8 @@ class MediTrackWindow(QMainWindow):
 if __name__ == "__main__":
     import sys
     app = QApplication(sys.argv)
-    app.setFont(QFont("Liberation Sans", 16))
-    app.setStyleSheet("QWidget { font-family: 'Liberation Sans', 'DejaVu Sans', sans-serif; }")
+    app.setFont(QFont("Segoe UI", 12))
+    app.setStyleSheet("QWidget { font-family: 'Segoe UI', 'Inter', sans-serif; }")
 
     login = LoginDialog()
     if login.exec_() != QDialog.Accepted or not login.user:
