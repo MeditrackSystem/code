@@ -544,6 +544,29 @@ class ScanAnimationWidget(QWidget):
         painter.setFont(QFont("Segoe UI", 12, QFont.Bold))
         painter.drawText(cx - 26, cy - 26, 52, 52, Qt.AlignCenter, "RFID")
 
+# --------------------------- Toggle switch ---------------------------
+class ToggleSwitch(QCheckBox):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setFixedSize(52, 28)
+        self.setCursor(Qt.PointingHandCursor)
+
+    def paintEvent(self, event):
+        from PyQt5.QtGui import QPainter, QColor, QBrush
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+        if self.isChecked():
+            bg = QColor("#2563EB")
+        else:
+            bg = QColor("#CBD5E1")
+        painter.setBrush(QBrush(bg))
+        painter.setPen(Qt.NoPen)
+        painter.drawRoundedRect(0, 0, self.width(), self.height(), 14, 14)
+        # knob
+        knob_x = self.width() - 24 if self.isChecked() else 4
+        painter.setBrush(QBrush(QColor("#FFFFFF")))
+        painter.drawEllipse(knob_x, 4, 20, 20)
+
 # --------------------------- Main window ---------------------------
 class MediTrackWindow(QMainWindow):
     def __init__(self, current_user=None):
@@ -576,22 +599,27 @@ class MediTrackWindow(QMainWindow):
         QMainWindow {
             background: #F4F7FB;
         }
-        QLabel { color: #0f172a; font-size: 24px; }
-        QLabel#title { color: #0A2540; font-size: 34px; font-weight: 800; }
-        QLabel#subtitle { color: #0F766E; font-size: 18px; }
-        QLabel#status { font-size: 20px; font-weight: 600; color: #0A2540; }
+        QFrame#sidebar {
+            background: #FFFFFF;
+            border-right: 1px solid #E2E8F0;
+            border-radius: 0px;
+        }
+        QLabel { color: #1E293B; font-size: 24px; }
+        QLabel#title { color: #142B4A; font-size: 32px; font-weight: 800; }
+        QLabel#subtitle { color: #64748B; font-size: 16px; }
+        QLabel#status { font-size: 18px; font-weight: 600; color: #2563EB; }
         QPushButton {
-            font-size: 22px; background: #0A2540; color: white;
-            border: none; border-radius: 14px; padding: 14px 28px;
+            font-size: 20px; background: #2563EB; color: white;
+            border: none; border-radius: 12px; padding: 12px 24px;
             font-weight: 600;
         }
-        QPushButton:hover { background: #0F766E; }
-        QPushButton:pressed { background: #064e3b; }
-        QPushButton:disabled { background: #94a3b8; color: #f8fafc; }
+        QPushButton:hover { background: #1D4ED8; }
+        QPushButton:pressed { background: #1E40AF; }
+        QPushButton:disabled { background: #94A3B8; color: #F8FAFC; }
         QPushButton#secondary {
-            background: white; color: #0A2540; border: 1px solid #99f6e4;
+            background: white; color: #2563EB; border: 1px solid #E2E8F0;
         }
-        QPushButton#secondary:hover { background: #f0fdfa; }
+        QPushButton#secondary:hover { background: #F8FAFC; }
         QCheckBox { font-size: 22px; color: #0f172a; font-weight: 600; }
         QLineEdit, QComboBox {
             border: 1px solid #cbd5e1; border-radius: 12px;
@@ -621,17 +649,10 @@ class MediTrackWindow(QMainWindow):
         sidebar.setFixedWidth(320)
         sidebar.setStyleSheet("""
             QFrame#sidebar {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #0A2540, stop:1 #0F766E);
-                border: none;
+                background: #FFFFFF;
+                border-right: 1px solid #E2E8F0;
                 border-radius: 0px;
             }
-            QFrame#sidebar QLabel { color: white; }
-            QFrame#sidebar QCheckBox { color: white; }
-            QFrame#sidebar QPushButton#secondary {
-                background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.3);
-            }
-            QFrame#sidebar QPushButton#secondary:hover { background: rgba(255,255,255,0.25); }
         """)
         side = QVBoxLayout(sidebar)
         side.setContentsMargins(20, 24, 20, 24)
@@ -665,11 +686,15 @@ class MediTrackWindow(QMainWindow):
 
         # Wireless sensor section
         side.addWidget(self._section("Wireless Sensor"))
-        self.bt_toggle = QCheckBox("Enable Bluetooth")
-        self.bt_toggle.setMinimumHeight(44)
-        self.bt_toggle.setStyleSheet("font-size:22px; font-weight:600;")
+        toggle_row = QHBoxLayout()
+        toggle_label = QLabel("Bluetooth")
+        toggle_label.setStyleSheet("font-size:18px; font-weight:600; color:#1e293b;")
+        toggle_row.addWidget(toggle_label)
+        self.bt_toggle = ToggleSwitch()
         self.bt_toggle.toggled.connect(self._on_bt_toggle)
-        side.addWidget(self.bt_toggle)
+        toggle_row.addWidget(self.bt_toggle)
+        toggle_row.addStretch(1)
+        side.addLayout(toggle_row)
 
         # RFID status indicator
         self.rfid_status_indicator = QLabel("● Waiting for scan")
@@ -1001,7 +1026,7 @@ class MediTrackWindow(QMainWindow):
             card.setStyleSheet("background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:10px;")
             cl = QVBoxLayout(card)
             cl.setSpacing(4)
-            name = QLabel(f"💊 {order['medication']}")
+            name = QLabel(order['medication'])
             name.setStyleSheet("font-weight:700; font-size:17px; color:#1e3a8a;")
             cl.addWidget(name)
             cl.addWidget(QLabel(f"Dose: {order['dose']}   |   Route: {order['route']}"))
@@ -1023,15 +1048,14 @@ class MediTrackWindow(QMainWindow):
             self.records_layout.addWidget(lbl)
             self.records_layout.addStretch(1)
             return
-        icons = {"Diagnosis": "🩺", "Allergy": "⚠️", "History": "📜", "Note": "📝"}
         for r in records:
             rtype = r.get("record_type", "Note")
-            icon = icons.get(rtype, "📄")
             card = QFrame()
             card.setStyleSheet("background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:10px;")
             cl = QVBoxLayout(card)
             cl.setSpacing(4)
-            title = QLabel(f"{icon} {rtype}")
+            title = QLabel(rtype)
+            title.setStyleSheet("font-weight:700; font-size:16px; color:#2563EB;")
             title.setStyleSheet("font-weight:700; font-size:16px; color:#1e3a8a;")
             cl.addWidget(title)
             cl.addWidget(QLabel(r.get("note", "")))
