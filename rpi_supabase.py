@@ -265,27 +265,71 @@ def sync_csv_to_supabase():
 
     # medication_orders
     orders = read_csv("medication_orders")
-    # need patient_id mapping; supabase patient ids differ. Skip id, map by patient_code via lookup? Keep simple: send patient_id as-is (works if ids align). 
     o_rows = []
     for o in orders:
         o_rows.append({
+            "id": int(o["id"]) if str(o.get("id", "")).isdigit() else None,
+            "patient_id": int(o["patient_id"]) if str(o.get("patient_id", "")).isdigit() else None,
             "medication": o["medication"],
             "dose": o["dose"],
             "route": o["route"],
             "frequency": o["frequency"],
+            "prescriber_id": int(o["prescriber_id"]) if str(o.get("prescriber_id", "")).isdigit() else None,
             "status": o["status"],
         })
-    # medication orders require patient_id; skip auto-sync of orders without mapping (manual). 
-    # scan_logs
-    scans = read_csv("scan_logs")
-    s_rows = []
-    for s in scans:
-        s_rows.append({
-            "reader_type": s["reader_type"],
-            "scanned_at": s["scanned_at"],
-            "outcome": s["outcome"],
+    if o_rows:
+        try:
+            h = _sb_headers()
+            h["Prefer"] = "resolution=merge-duplicates,return=minimal"
+            requests.post(f"{SUPABASE_URL}/rest/v1/medication_orders?on_conflict=id",
+                         headers=h, json=o_rows, timeout=15)
+        except Exception as e:
+            print("sync medication_orders failed:", e)
+
+    # medical_records
+    records = read_csv("medical_records")
+    r_rows = []
+    for r in records:
+        r_rows.append({
+            "id": int(r["id"]) if str(r.get("id", "")).isdigit() else None,
+            "patient_id": int(r["patient_id"]) if str(r.get("patient_id", "")).isdigit() else None,
+            "clinician_id": int(r["clinician_id"]) if str(r.get("clinician_id", "")).isdigit() else None,
+            "record_type": r["record_type"],
+            "note": r["note"],
+            "recorded_at": r["recorded_at"] or None,
         })
-    # scan_logs need tag_id/user_id (uuid/bigint) - skip bulk to avoid FK issues; RPI inserts individually with proper ids.
+    if r_rows:
+        try:
+            h = _sb_headers()
+            h["Prefer"] = "resolution=merge-duplicates,return=minimal"
+            requests.post(f"{SUPABASE_URL}/rest/v1/medical_records?on_conflict=id",
+                         headers=h, json=r_rows, timeout=15)
+        except Exception as e:
+            print("sync medical_records failed:", e)
+
+    # medication_administrations
+    admins = read_csv("medication_administrations")
+    a_rows = []
+    for a in admins:
+        a_rows.append({
+            "id": int(a["id"]) if str(a.get("id", "")).isdigit() else None,
+            "order_id": int(a["order_id"]) if str(a.get("order_id", "")).isdigit() else None,
+            "scheduled_at": a["scheduled_at"] or None,
+            "administered_at": a["administered_at"] or None,
+            "status": a["status"],
+            "administered_by": int(a["administered_by"]) if str(a.get("administered_by", "")).isdigit() else None,
+            "notes": a.get("notes", ""),
+        })
+    if a_rows:
+        try:
+            h = _sb_headers()
+            h["Prefer"] = "resolution=merge-duplicates,return=minimal"
+            requests.post(f"{SUPABASE_URL}/rest/v1/medication_administrations?on_conflict=id",
+                         headers=h, json=a_rows, timeout=15)
+        except Exception as e:
+            print("sync medication_administrations failed:", e)
+
+    # scan_logs are inserted individually by the app (with proper tag/user ids).
 
     print("Supabase sync pass done.")
 
