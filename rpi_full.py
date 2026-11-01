@@ -239,7 +239,7 @@ class BleWorker(QThread):
         self.status.emit(f"Connecting to {target.address}...")
         self.log.emit(f"Connecting to {target.address} ...")
         try:
-            async with BleakClient(target, timeout=15.0) as client:
+            async with BleakClient(target, timeout=30.0) as client:
                 self.client = client
                 self.status.emit("Connected")
                 self.log.emit("[OK] Connected. Waiting for card taps...")
@@ -472,7 +472,7 @@ class AutoBleWorker(QThread):
                 self._sleep(3)
 
     async def _connect(self, loop, target):
-        async with BleakClient(target, timeout=15.0) as client:
+        async with BleakClient(target, timeout=30.0) as client:
             self.status.emit("Connected")
             def on_notify(_sender, data):
                 try:
@@ -483,7 +483,11 @@ class AutoBleWorker(QThread):
                     self.status.emit(f"notify err: {e}")
             await client.start_notify(CHARACTERISTIC_UUID, on_notify)
             while self.running and client.is_connected:
-                await asyncio.sleep(0.5)
+                await asyncio.sleep(5)
+                try:
+                    await client.read_gatt_char(CHARACTERISTIC_UUID)
+                except Exception:
+                    break
             try:
                 await client.stop_notify(CHARACTERISTIC_UUID)
             except Exception:
@@ -548,7 +552,7 @@ class ScanAnimationWidget(QWidget):
 class ToggleSwitch(QCheckBox):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setFixedSize(88, 44)
+        self.setFixedSize(120, 52)
         self.setCursor(Qt.PointingHandCursor)
 
     def paintEvent(self, event):
@@ -561,11 +565,11 @@ class ToggleSwitch(QCheckBox):
             bg = QColor("#CBD5E1")
         painter.setBrush(QBrush(bg))
         painter.setPen(Qt.NoPen)
-        painter.drawRoundedRect(0, 0, self.width(), self.height(), 22, 22)
+        painter.drawRoundedRect(0, 0, self.width(), self.height(), 26, 26)
         # knob
-        knob_x = self.width() - 40 if self.isChecked() else 4
+        knob_x = self.width() - 48 if self.isChecked() else 4
         painter.setBrush(QBrush(QColor("#FFFFFF")))
-        painter.drawEllipse(knob_x, 4, 36, 36)
+        painter.drawEllipse(knob_x, 4, 44, 44)
 
 # --------------------------- Main window ---------------------------
 class MediTrackWindow(QMainWindow):
@@ -689,6 +693,8 @@ class MediTrackWindow(QMainWindow):
         toggle_row = QHBoxLayout()
         toggle_label = QLabel("Bluetooth")
         toggle_label.setStyleSheet("font-size:18px; font-weight:600; color:#1e293b;")
+        toggle_label.setCursor(Qt.PointingHandCursor)
+        toggle_label.mousePressEvent = lambda e: self.bt_toggle.toggle()
         toggle_row.addWidget(toggle_label)
         self.bt_toggle = ToggleSwitch()
         self.bt_toggle.toggled.connect(self._on_bt_toggle)
