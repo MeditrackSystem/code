@@ -559,17 +559,19 @@ class ToggleSwitch(QCheckBox):
         from PyQt5.QtGui import QPainter, QColor, QBrush
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
+        w, h = self.width(), self.height()
         if self.isChecked():
             bg = QColor("#2563EB")
         else:
             bg = QColor("#CBD5E1")
         painter.setBrush(QBrush(bg))
         painter.setPen(Qt.NoPen)
-        painter.drawRoundedRect(0, 0, self.width(), self.height(), 26, 26)
+        painter.drawRoundedRect(0, 0, w, h, h//2, h//2)
         # knob
-        knob_x = self.width() - 48 if self.isChecked() else 4
+        knob_d = h - 8
+        knob_x = w - knob_d - 4 if self.isChecked() else 4
         painter.setBrush(QBrush(QColor("#FFFFFF")))
-        painter.drawEllipse(knob_x, 4, 44, 44)
+        painter.drawEllipse(knob_x, 4, knob_d, knob_d)
 
 # --------------------------- Main window ---------------------------
 class MediTrackWindow(QMainWindow):
@@ -696,9 +698,20 @@ class MediTrackWindow(QMainWindow):
         toggle_label.setCursor(Qt.PointingHandCursor)
         toggle_label.mousePressEvent = lambda e: self.bt_toggle.toggle()
         toggle_row.addWidget(toggle_label)
+
+        # Larger touch target, smaller visual switch
+        touch_area = QWidget()
+        touch_area.setFixedSize(100, 52)
+        touch_area.setCursor(Qt.PointingHandCursor)
+        ta_layout = QHBoxLayout(touch_area)
+        ta_layout.setContentsMargins(20, 8, 20, 8)
         self.bt_toggle = ToggleSwitch()
+        self.bt_toggle.setFixedSize(60, 36)
+        # adjust paint by scaling? Recompute knob in paint? We'll just use smaller paint via size.
         self.bt_toggle.toggled.connect(self._on_bt_toggle)
-        toggle_row.addWidget(self.bt_toggle)
+        ta_layout.addWidget(self.bt_toggle, 0, Qt.AlignCenter)
+        touch_area.mousePressEvent = lambda e: self.bt_toggle.toggle()
+        toggle_row.addWidget(touch_area)
         toggle_row.addStretch(1)
         side.addLayout(toggle_row)
 
