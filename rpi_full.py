@@ -341,33 +341,82 @@ class LoginDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle("MediTrack Login")
         self.setModal(True)
-        self.resize(360, 200)
+        self.setWindowState(Qt.WindowFullScreen)
         self.user = None
 
-        layout = QVBoxLayout(self)
-        title = QLabel("MediTrack Hospital System")
-        title.setStyleSheet("font-size:18px; font-weight:700; color:#1e3a8a;")
-        layout.addWidget(title)
-        sub = QLabel("Please sign in to continue")
-        sub.setStyleSheet("color:#6b7280;")
-        layout.addWidget(sub)
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.setAlignment(Qt.AlignCenter)
 
-        form = QFormLayout()
+        # Gradient background
+        self.setStyleSheet("""
+            QDialog {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                    stop:0 #0A2540, stop:0.5 #0F766E, stop:1 #14B8A6);
+            }
+        """)
+
+        card = QFrame()
+        card.setFixedWidth(520)
+        card.setStyleSheet("""
+            QFrame {
+                background: white;
+                border-radius: 24px;
+            }
+        """)
+        cl = QVBoxLayout(card)
+        cl.setContentsMargins(40, 40, 40, 40)
+        cl.setSpacing(18)
+
+        # Logo
+        logo_pix = QPixmap(str(BASE_DIR / "logo.png"))
+        if not logo_pix.isNull():
+            logo_lbl = QLabel()
+            logo_lbl.setPixmap(logo_pix.scaled(120, 120, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+            logo_lbl.setAlignment(Qt.AlignCenter)
+            cl.addWidget(logo_lbl)
+
+        title = QLabel("MediTrack")
+        title.setStyleSheet("font-size:40px; font-weight:800; color:#0A2540;")
+        title.setAlignment(Qt.AlignCenter)
+        cl.addWidget(title)
+
+        sub = QLabel("Hospital Management System")
+        sub.setStyleSheet("font-size:20px; color:#64748b;")
+        sub.setAlignment(Qt.AlignCenter)
+        cl.addWidget(sub)
+
         self.username_input = QLineEdit()
-        self.password_input = QLineEdit()
-        self.password_input.setEchoMode(QLineEdit.Password)
-        form.addRow("Username:", self.username_input)
-        form.addRow("Password:", self.password_input)
-        layout.addLayout(form)
+        self.username_input.setPlaceholderText("Username")
+        self.username_input.setMinimumHeight(52)
+        self.username_input.setStyleSheet("font-size:20px; border-radius:12px; padding:10px;")
+        cl.addWidget(self.username_input)
 
-        btns = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-        btns.accepted.connect(self.try_login)
-        btns.rejected.connect(self.reject)
-        layout.addWidget(btns)
+        self.password_input = QLineEdit()
+        self.password_input.setPlaceholderText("Password")
+        self.password_input.setEchoMode(QLineEdit.Password)
+        self.password_input.setMinimumHeight(52)
+        self.password_input.setStyleSheet("font-size:20px; border-radius:12px; padding:10px;")
+        cl.addWidget(self.password_input)
+
+        login_btn = QPushButton("Sign In")
+        login_btn.setMinimumHeight(52)
+        login_btn.setStyleSheet("""
+            QPushButton {
+                background: #0A2540; color: white; border: none;
+                border-radius: 12px; font-size: 22px; font-weight: 700;
+            }
+            QPushButton:hover { background: #0F766E; }
+        """)
+        login_btn.clicked.connect(self.try_login)
+        cl.addWidget(login_btn)
 
         self.status = QLabel("")
-        self.status.setStyleSheet("color:#dc2626;")
-        layout.addWidget(self.status)
+        self.status.setStyleSheet("color:#dc2626; font-size:16px;")
+        self.status.setAlignment(Qt.AlignCenter)
+        cl.addWidget(self.status)
+
+        outer.addWidget(card, 0, Qt.AlignCenter)
 
     def try_login(self):
         username = self.username_input.text().strip()
@@ -526,36 +575,36 @@ class MediTrackWindow(QMainWindow):
         return """
         QMainWindow {
             background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-                stop:0 #f0f9ff, stop:1 #e6f4f1);
+                stop:0 #0A2540, stop:0.5 #0F766E, stop:1 #14B8A6);
         }
         QLabel { color: #0f172a; font-size: 24px; }
-        QLabel#title { color: #013371; font-size: 34px; font-weight: 800; }
-        QLabel#subtitle { color: #0f766e; font-size: 18px; }
-        QLabel#status { font-size: 20px; font-weight: 600; color: #013371; }
+        QLabel#title { color: #0A2540; font-size: 34px; font-weight: 800; }
+        QLabel#subtitle { color: #0F766E; font-size: 18px; }
+        QLabel#status { font-size: 20px; font-weight: 600; color: #0A2540; }
         QPushButton {
-            font-size: 22px; background: #013371; color: white;
+            font-size: 22px; background: #0A2540; color: white;
             border: none; border-radius: 14px; padding: 14px 28px;
             font-weight: 600;
         }
-        QPushButton:hover { background: #022a5c; }
-        QPushButton:pressed { background: #011f45; }
+        QPushButton:hover { background: #0F766E; }
+        QPushButton:pressed { background: #064e3b; }
         QPushButton:disabled { background: #94a3b8; color: #f8fafc; }
         QPushButton#secondary {
-            background: white; color: #013371; border: 1px solid #99f6e4;
+            background: white; color: #0A2540; border: 1px solid #99f6e4;
         }
         QPushButton#secondary:hover { background: #f0fdfa; }
-        QCheckBox { font-size: 20px; color: #0f172a; }
+        QCheckBox { font-size: 22px; color: #0f172a; font-weight: 600; }
         QLineEdit, QComboBox {
             border: 1px solid #cbd5e1; border-radius: 12px;
-            padding: 10px 12px; background: white; font-size: 20px;
+            padding: 12px 14px; background: white; font-size: 22px;
         }
         QTextEdit {
             background: white; border: 1px solid #cbd5e1;
-            border-radius: 12px; padding: 8px; font-size: 20px;
+            border-radius: 12px; padding: 10px; font-size: 20px;
         }
         QFrame#card {
-            background: white; border: 1px solid #d9e7ec;
-            border-radius: 18px;
+            background: white; border: none;
+            border-radius: 20px;
         }
         QScrollArea { border: none; background: transparent; }
         """
@@ -574,16 +623,13 @@ class MediTrackWindow(QMainWindow):
         side.setContentsMargins(20, 24, 20, 24)
         side.setSpacing(14)
 
-        # Logo
+        # Logo only
         logo_pix = QPixmap(str(BASE_DIR / "logo.png"))
         if not logo_pix.isNull():
             logo_img = QLabel()
-            logo_img.setPixmap(logo_pix.scaled(72, 72, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+            logo_img.setPixmap(logo_pix.scaled(120, 120, Qt.KeepAspectRatio, Qt.SmoothTransformation))
             logo_img.setAlignment(Qt.AlignCenter)
             side.addWidget(logo_img)
-        logo = QLabel("MediTrack")
-        logo.setObjectName("title")
-        side.addWidget(logo)
         sub = QLabel("Hospital Management System")
         sub.setObjectName("subtitle")
         side.addWidget(sub)
@@ -605,7 +651,9 @@ class MediTrackWindow(QMainWindow):
 
         # Wireless sensor section
         side.addWidget(self._section("Wireless Sensor"))
-        self.bt_toggle = QCheckBox("Enable Bluetooth sensor")
+        self.bt_toggle = QCheckBox("Enable Bluetooth")
+        self.bt_toggle.setMinimumHeight(44)
+        self.bt_toggle.setStyleSheet("font-size:22px; font-weight:600;")
         self.bt_toggle.toggled.connect(self._on_bt_toggle)
         side.addWidget(self.bt_toggle)
 
