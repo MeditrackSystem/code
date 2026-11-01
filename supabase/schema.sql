@@ -1,0 +1,91 @@
+-- MediTrack schema for Supabase (prototype, no Supabase Auth)
+-- Run in Supabase SQL editor.
+
+-- ---------- users (mirrors CSV) ----------
+create table if not exists public.users (
+  id bigint primary key generated always as identity,
+  employee_id text,
+  name text not null,
+  username text unique not null,
+  password text not null,
+  role text not null default 'Read-only staff',
+  status text not null default 'Active',
+  created_at timestamptz not null default now()
+);
+
+-- ---------- patients ----------
+create table if not exists public.patients (
+  id bigint primary key generated always as identity,
+  patient_code text unique not null,
+  name text not null,
+  birth_date date,
+  room text,
+  bed text,
+  attending_physician text,
+  admission_status text default 'Admitted',
+  created_at timestamptz not null default now()
+);
+
+-- ---------- rfid_tags ----------
+create table if not exists public.rfid_tags (
+  id bigint primary key generated always as identity,
+  tag_token text unique not null,
+  patient_id bigint references public.patients(id) on delete set null,
+  status text not null default 'Active',
+  assigned_at timestamptz,
+  deactivated_at timestamptz
+);
+
+-- ---------- medical_records ----------
+create table if not exists public.medical_records (
+  id bigint primary key generated always as identity,
+  patient_id bigint references public.patients(id) on delete cascade,
+  clinician_id bigint references public.users(id),
+  record_type text,
+  note text,
+  recorded_at timestamptz not null default now()
+);
+
+-- ---------- medication_orders ----------
+create table if not exists public.medication_orders (
+  id bigint primary key generated always as identity,
+  patient_id bigint references public.patients(id) on delete cascade,
+  medication text not null,
+  dose text,
+  route text,
+  frequency text,
+  prescriber_id bigint references public.users(id),
+  status text not null default 'Active',
+  created_at timestamptz not null default now()
+);
+
+-- ---------- medication_administrations ----------
+create table if not exists public.medication_administrations (
+  id bigint primary key generated always as identity,
+  order_id bigint references public.medication_orders(id) on delete cascade,
+  scheduled_at timestamptz,
+  administered_at timestamptz,
+  status text,
+  administered_by bigint references public.users(id),
+  notes text
+);
+
+-- ---------- scan_logs ----------
+create table if not exists public.scan_logs (
+  id bigint primary key generated always as identity,
+  tag_id bigint references public.rfid_tags(id) on delete set null,
+  user_id bigint references public.users(id),
+  reader_type text,
+  scanned_at timestamptz not null default now(),
+  outcome text
+);
+
+-- ---------- audit_logs ----------
+create table if not exists public.audit_logs (
+  id bigint primary key generated always as identity,
+  user_id bigint references public.users(id),
+  action text,
+  record_type text,
+  record_id text,
+  occurred_at timestamptz not null default now()
+);

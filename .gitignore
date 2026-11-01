@@ -5,3 +5,5 @@ __pycache__/
 .env
 logs/
 *.log
+web/node_modules/
+web/dist/
