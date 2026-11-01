@@ -151,10 +151,17 @@ def save_uid(uid):
 def card_frame():
     frame = QFrame()
     frame.setObjectName("card")
+    frame.setStyleSheet("""
+        QFrame#card {
+            background: white;
+            border: none;
+            border-radius: 14px;
+        }
+    """)
     shadow = QGraphicsDropShadowEffect()
-    shadow.setBlurRadius(24)
-    shadow.setOffset(0, 4)
-    shadow.setColor(QColor(0, 0, 0, 25))
+    shadow.setBlurRadius(30)
+    shadow.setOffset(0, 6)
+    shadow.setColor(QColor(0, 0, 0, 35))
     frame.setGraphicsEffect(shadow)
     return frame
 
@@ -308,62 +315,85 @@ class LoginDialog(QDialog):
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
         outer.setAlignment(Qt.AlignCenter)
-        self.setStyleSheet("QDialog { background: #F4F7FB; }")
+        self.setStyleSheet("""
+            QDialog { background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #EBF2FF, stop:1 #F8FAFF); }
+            QLineEdit {
+                border: 2px solid #E2E8F0; border-radius: 12px;
+                padding: 14px 16px; background: #F8FAFC; font-size: 22px;
+                color: #1E293B;
+            }
+            QLineEdit:focus {
+                border: 2px solid #2563EB; background: white;
+            }
+            QPushButton#loginBtn {
+                font-size: 24px; background: #2563EB; color: white;
+                border: none; border-radius: 12px; padding: 16px 24px;
+                font-weight: 700;
+            }
+            QPushButton#loginBtn:hover { background: #1D4ED8; }
+            QPushButton#loginBtn:pressed { background: #1E40AF; }
+        """)
 
         card = QFrame()
         card.setFixedWidth(560)
         card.setStyleSheet("""
             QFrame {
                 background: white;
-                border: 1px solid #E2E8F0;
-                border-radius: 16px;
+                border: none;
+                border-radius: 20px;
             }
         """)
         shadow = QGraphicsDropShadowEffect()
-        shadow.setBlurRadius(30)
-        shadow.setOffset(0, 8)
-        shadow.setColor(QColor(0, 0, 0, 30))
+        shadow.setBlurRadius(40)
+        shadow.setOffset(0, 10)
+        shadow.setColor(QColor(37, 99, 235, 40))
         card.setGraphicsEffect(shadow)
 
         cl = QVBoxLayout(card)
-        cl.setContentsMargins(40, 40, 40, 40)
-        cl.setSpacing(16)
+        cl.setContentsMargins(48, 48, 48, 48)
+        cl.setSpacing(18)
 
         logo_pix = QPixmap(str(BASE_DIR / "logo.png"))
         if not logo_pix.isNull():
             logo_lbl = QLabel()
             logo_lbl.setPixmap(logo_pix.scaled(96, 96, Qt.KeepAspectRatio, Qt.SmoothTransformation))
             logo_lbl.setAlignment(Qt.AlignCenter)
+            logo_lbl.setStyleSheet("border:none; background:transparent;")
             cl.addWidget(logo_lbl)
 
         title = QLabel("MediTrack")
-        title.setStyleSheet("font-size:40px; font-weight:800; color:#142B4A;")
+        title.setStyleSheet("font-size:42px; font-weight:800; color:#1E3A5F; border:none; background:transparent;")
         title.setAlignment(Qt.AlignCenter)
         cl.addWidget(title)
 
         sub = QLabel("Hospital Management System")
-        sub.setStyleSheet("font-size:22px; color:#64748B;")
+        sub.setStyleSheet("font-size:22px; color:#64748B; border:none; background:transparent;")
         sub.setAlignment(Qt.AlignCenter)
         cl.addWidget(sub)
 
+        cl.addSpacing(8)
+
         self.username_input = QLineEdit()
-        self.username_input.setPlaceholderText("Username")
-        self.username_input.setMinimumHeight(56)
+        self.username_input.setPlaceholderText("  Username")
+        self.username_input.setMinimumHeight(58)
         cl.addWidget(self.username_input)
 
         self.password_input = QLineEdit()
-        self.password_input.setPlaceholderText("Password")
+        self.password_input.setPlaceholderText("  Password")
         self.password_input.setEchoMode(QLineEdit.Password)
-        self.password_input.setMinimumHeight(56)
+        self.password_input.setMinimumHeight(58)
         cl.addWidget(self.password_input)
 
+        cl.addSpacing(4)
+
         login_btn = QPushButton("Sign In")
-        login_btn.setMinimumHeight(56)
+        login_btn.setObjectName("loginBtn")
+        login_btn.setMinimumHeight(58)
         login_btn.clicked.connect(self.try_login)
         cl.addWidget(login_btn)
 
         self.status = QLabel("")
-        self.status.setStyleSheet("color:#DC2626; font-size:20px;")
+        self.status.setStyleSheet("color:#DC2626; font-size:20px; border:none; background:transparent;")
         self.status.setAlignment(Qt.AlignCenter)
         cl.addWidget(self.status)
 
@@ -412,9 +442,9 @@ class MediTrackWindow(QMainWindow):
 
     def _stylesheet(self):
         return """
-        QMainWindow { background: #F4F7FB; }
+        QMainWindow { background: #EFF4FB; }
         QLabel { color: #1E293B; font-size: 22px; }
-        QLabel#title { color: #142B4A; font-size: 34px; font-weight: 800; }
+        QLabel#title { color: #1E3A5F; font-size: 34px; font-weight: 800; }
         QLabel#subtitle { color: #64748B; font-size: 20px; }
         QLabel#status { font-size: 22px; font-weight: 600; color: #2563EB; }
         QPushButton {
@@ -426,19 +456,27 @@ class MediTrackWindow(QMainWindow):
         QPushButton:pressed { background: #1E40AF; }
         QPushButton:disabled { background: #94A3B8; color: #F8FAFC; }
         QPushButton#secondary {
-            background: white; color: #2563EB; border: 2px solid #E2E8F0;
+            background: white; color: #2563EB; border: 2px solid #DBEAFE;
         }
-        QPushButton#secondary:hover { background: #F8FAFC; }
+        QPushButton#secondary:hover { background: #EFF6FF; }
+        QPushButton#scanAgainBtn {
+            font-size: 24px; background: #2563EB; color: white;
+            border: none; border-radius: 12px; padding: 16px 32px;
+            font-weight: 700;
+        }
+        QPushButton#scanAgainBtn:hover { background: #1D4ED8; }
+        QPushButton#scanAgainBtn:pressed { background: #1E40AF; }
         QLineEdit {
-            border: 1px solid #CBD5E1; border-radius: 10px;
+            border: 2px solid #E2E8F0; border-radius: 10px;
             padding: 12px 14px; background: white; font-size: 22px;
         }
+        QLineEdit:focus { border: 2px solid #2563EB; }
         QTextEdit {
-            background: white; border: 1px solid #CBD5E1;
+            background: white; border: 2px solid #E2E8F0;
             border-radius: 10px; padding: 10px; font-size: 22px;
         }
         QFrame#card {
-            background: white; border: 1px solid #E2E8F0;
+            background: white; border: none;
             border-radius: 14px;
         }
         QScrollArea { border: none; background: transparent; }
@@ -453,7 +491,7 @@ class MediTrackWindow(QMainWindow):
 
         # ---------- Top bar ----------
         topbar = QFrame()
-        topbar.setStyleSheet("background: white; border-bottom: 1px solid #E2E8F0;")
+        topbar.setStyleSheet("background: white;")
         topbar.setFixedHeight(80)
         tb = QHBoxLayout(topbar)
         tb.setContentsMargins(24, 0, 24, 0)
@@ -483,7 +521,7 @@ class MediTrackWindow(QMainWindow):
 
         # ---------- Main content ----------
         main_wrapper = QWidget()
-        main_wrapper.setStyleSheet("background: #F4F7FB;")
+        main_wrapper.setStyleSheet("background: #EFF4FB;")
         main_layout = QHBoxLayout(main_wrapper)
         main_layout.setContentsMargins(24, 24, 24, 24)
         main_layout.setSpacing(24)
@@ -534,14 +572,14 @@ class MediTrackWindow(QMainWindow):
 
         # Front / scan page
         front = QWidget()
-        front.setStyleSheet("background: #F4F7FB;")
+        front.setStyleSheet("background: transparent;")
         front_layout = QVBoxLayout(front)
         front_layout.setContentsMargins(40, 40, 40, 40)
         front_layout.setSpacing(20)
         front_layout.addStretch(1)
 
         front_title = QLabel("Ready to Scan")
-        front_title.setStyleSheet("font-size:44px; font-weight:700; color:#142B4A;")
+        front_title.setStyleSheet("font-size:44px; font-weight:700; color:#1E3A5F;")
         front_title.setAlignment(Qt.AlignCenter)
         front_layout.addWidget(front_title)
 
@@ -564,9 +602,9 @@ class MediTrackWindow(QMainWindow):
 
         # Result page
         result = QWidget()
-        result.setStyleSheet("background: #F4F7FB;")
+        result.setStyleSheet("background: transparent;")
         result_layout = QVBoxLayout(result)
-        result_layout.setContentsMargins(0, 0, 0, 0)
+        result_layout.setContentsMargins(0, 0, 0, 12)
         result_layout.setSpacing(16)
 
         # Patient profile card
@@ -578,13 +616,13 @@ class MediTrackWindow(QMainWindow):
         self.photo_label = QLabel("No photo")
         self.photo_label.setFixedSize(180, 180)
         self.photo_label.setAlignment(Qt.AlignCenter)
-        self.photo_label.setStyleSheet("background:#F1F5F9; border-radius:90px; color:#2563EB; font-weight:600; font-size:20px;")
+        self.photo_label.setStyleSheet("background:#DBEAFE; border-radius:90px; color:#2563EB; font-weight:600; font-size:20px;")
         pc.addWidget(self.photo_label, 0, Qt.AlignTop)
 
         details = QVBoxLayout()
         details.setSpacing(8)
         self.name_label = QLabel("No patient loaded")
-        self.name_label.setStyleSheet("font-size:34px; font-weight:700; color:#142B4A;")
+        self.name_label.setStyleSheet("font-size:34px; font-weight:700; color:#1E3A5F;")
         details.addWidget(self.name_label)
 
         self.detail_labels = {}
@@ -645,10 +683,12 @@ class MediTrackWindow(QMainWindow):
 
         result_layout.addLayout(mid_row, 1)
 
-        scan_again_btn = QPushButton("Scan Again")
-        scan_again_btn.setMinimumHeight(52)
+        scan_again_btn = QPushButton("⟲  Scan Again")
+        scan_again_btn.setObjectName("scanAgainBtn")
+        scan_again_btn.setMinimumHeight(60)
+        scan_again_btn.setCursor(Qt.PointingHandCursor)
         scan_again_btn.clicked.connect(self.back_to_front)
-        result_layout.addWidget(scan_again_btn, 0, Qt.AlignRight)
+        result_layout.addWidget(scan_again_btn)
 
         self.stack.addWidget(result)
 

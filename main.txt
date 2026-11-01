@@ -1,0 +1,4 @@
+cd ~/home/rpi/Documents/meditrack
+source venv/bin/activate
+curl -L -o rpi_full.py https://raw.githubusercontent.com/MeditrackSystem/code/main/rpi_full.py
+python rpi_full.py
