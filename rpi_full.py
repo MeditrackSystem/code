@@ -574,8 +574,7 @@ class MediTrackWindow(QMainWindow):
     def _stylesheet(self):
         return """
         QMainWindow {
-            background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-                stop:0 #0A2540, stop:0.5 #0F766E, stop:1 #14B8A6);
+            background: #F4F7FB;
         }
         QLabel { color: #0f172a; font-size: 24px; }
         QLabel#title { color: #0A2540; font-size: 34px; font-weight: 800; }
@@ -618,7 +617,22 @@ class MediTrackWindow(QMainWindow):
 
         # ---------- Sidebar ----------
         sidebar = card_frame()
-        sidebar.setFixedWidth(300)
+        sidebar.setObjectName("sidebar")
+        sidebar.setFixedWidth(320)
+        sidebar.setStyleSheet("""
+            QFrame#sidebar {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #0A2540, stop:1 #0F766E);
+                border: none;
+                border-radius: 0px;
+            }
+            QFrame#sidebar QLabel { color: white; }
+            QFrame#sidebar QCheckBox { color: white; }
+            QFrame#sidebar QPushButton#secondary {
+                background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.3);
+            }
+            QFrame#sidebar QPushButton#secondary:hover { background: rgba(255,255,255,0.25); }
+        """)
         side = QVBoxLayout(sidebar)
         side.setContentsMargins(20, 24, 20, 24)
         side.setSpacing(14)
@@ -659,11 +673,11 @@ class MediTrackWindow(QMainWindow):
 
         # RFID status indicator
         self.rfid_status_indicator = QLabel("● Waiting for scan")
-        self.rfid_status_indicator.setStyleSheet("color:#64748b; font-weight:600; font-size:16px;")
+        self.rfid_status_indicator.setStyleSheet("color: white; font-weight:600; font-size:16px;")
         side.addWidget(self.rfid_status_indicator)
 
         self.status_label = QLabel("Status: Bluetooth off")
-        self.status_label.setObjectName("status")
+        self.status_label.setStyleSheet("color: white; font-size: 18px; font-weight: 600;")
         side.addWidget(self.status_label)
 
         side.addStretch(1)
@@ -847,7 +861,7 @@ class MediTrackWindow(QMainWindow):
         self._clear_layout(self.records_layout)
         self.front_status.setText("Waiting for scan...")
         self.rfid_status_indicator.setText("● Waiting for scan")
-        self.rfid_status_indicator.setStyleSheet("color:#64748b; font-weight:600; font-size:16px;")
+        self.rfid_status_indicator.setStyleSheet("color: white; font-weight:600; font-size:16px;")
         self.stack.setCurrentIndex(0)
 
     def _on_status(self, text):
@@ -869,7 +883,7 @@ class MediTrackWindow(QMainWindow):
         if bundle is None:
             self.status_label.setText("Tag not recognized")
             self.rfid_status_indicator.setText("● Unknown RFID tag")
-            self.rfid_status_indicator.setStyleSheet("color:#dc2626; font-weight:600; font-size:16px;")
+            self.rfid_status_indicator.setStyleSheet("color:#fca5a5; font-weight:600; font-size:16px;")
             self.log(msg)
             log_scan("", user_id, reader_type, "Unknown tag")
             QMessageBox.warning(self, "Unknown tag", msg)
@@ -895,7 +909,7 @@ class MediTrackWindow(QMainWindow):
 
         self.status_label.setText("Patient loaded")
         self.rfid_status_indicator.setText("● Patient recognized")
-        self.rfid_status_indicator.setStyleSheet("color:#16a34a; font-weight:600; font-size:16px;")
+        self.rfid_status_indicator.setStyleSheet("color:#86efac; font-weight:600; font-size:16px;")
         self.log(f"Loaded patient: {p['name']} ({p['patient_code']})")
 
         if uid:
