@@ -147,6 +147,18 @@ def save_uid(uid):
         print("log write failed:", e)
 
 
+# --------------------------- Card frame helper ---------------------------
+def card_frame():
+    frame = QFrame()
+    frame.setObjectName("card")
+    shadow = QGraphicsDropShadowEffect()
+    shadow.setBlurRadius(24)
+    shadow.setOffset(0, 4)
+    shadow.setColor(QColor(0, 0, 0, 30))
+    frame.setGraphicsEffect(shadow)
+    return frame
+
+
 # --------------------------- Toggle switch ---------------------------
 class ToggleSwitch(QCheckBox):
     def __init__(self, parent=None):
