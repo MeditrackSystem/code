@@ -19,7 +19,8 @@ import threading
 
 # Force X11 on Linux/Wayland systems (fixes input and activation issues with PyQt5)
 if os.name == "posix":
-    os.environ.setdefault("QT_QPA_PLATFORM", "xcb")
+    # Force X11 even if the session defaults to Wayland
+    os.environ["QT_QPA_PLATFORM"] = "xcb"
 import traceback
 from datetime import datetime
 from pathlib import Path
