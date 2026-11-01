@@ -528,13 +528,13 @@ class MediTrackWindow(QMainWindow):
             background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
                 stop:0 #eaf2ff, stop:1 #f7faff);
         }
-        QLabel { color: #1f2937; font-size: 18px; }
-        QLabel#title { color: #1e3a8a; font-size: 30px; font-weight: 800; }
-        QLabel#subtitle { color: #64748b; font-size: 16px; }
-        QLabel#status { font-size: 18px; font-weight: 600; color: #2563eb; }
+        QLabel { color: #1f2937; font-size: 24px; }
+        QLabel#title { color: #1e3a8a; font-size: 40px; font-weight: 800; }
+        QLabel#subtitle { color: #64748b; font-size: 22px; }
+        QLabel#status { font-size: 24px; font-weight: 600; color: #2563eb; }
         QPushButton {
-            font-size: 16px; background: #2563eb; color: white;
-            border: none; border-radius: 12px; padding: 10px 20px;
+            font-size: 22px; background: #2563eb; color: white;
+            border: none; border-radius: 14px; padding: 14px 28px;
             font-weight: 600;
         }
         QPushButton:hover { background: #1d4ed8; }
@@ -619,12 +619,12 @@ class MediTrackWindow(QMainWindow):
         front_layout.setSpacing(24)
 
         front_title = QLabel("Ready to Scan")
-        front_title.setStyleSheet("font-size:28px; font-weight:700; color:#1e3a8a;")
+        front_title.setStyleSheet("font-size:44px; font-weight:700; color:#1e3a8a;")
         front_title.setAlignment(Qt.AlignCenter)
         front_layout.addWidget(front_title)
 
         front_sub = QLabel("Scan an RFID wristband to view patient information")
-        front_sub.setStyleSheet("font-size:16px; color:#6b7280;")
+        front_sub.setStyleSheet("font-size:22px; color:#6b7280;")
         front_sub.setAlignment(Qt.AlignCenter)
         front_layout.addWidget(front_sub)
 
@@ -632,7 +632,7 @@ class MediTrackWindow(QMainWindow):
         front_layout.addWidget(self.scan_anim, 0, Qt.AlignCenter)
 
         self.front_status = QLabel("Waiting for scan...")
-        self.front_status.setStyleSheet("font-size:16px; font-weight:600; color:#2563eb;")
+        self.front_status.setStyleSheet("font-size:24px; font-weight:600; color:#2563eb;")
         self.front_status.setAlignment(Qt.AlignCenter)
         front_layout.addWidget(self.front_status)
 
@@ -658,7 +658,7 @@ class MediTrackWindow(QMainWindow):
         details = QVBoxLayout()
         details.setSpacing(8)
         self.name_label = QLabel("No patient loaded")
-        self.name_label.setStyleSheet("font-size:22px; font-weight:700; color:#1e3a8a;")
+        self.name_label.setStyleSheet("font-size:34px; font-weight:700; color:#1e3a8a;")
         details.addWidget(self.name_label)
 
         self.detail_labels = {}
@@ -671,9 +671,9 @@ class MediTrackWindow(QMainWindow):
         ]:
             row = QHBoxLayout()
             k = QLabel(f"{key}:")
-            k.setStyleSheet("font-weight:600; color:#374151; font-size:16px;")
+            k.setStyleSheet("font-weight:600; color:#374151; font-size:22px;")
             v = QLabel(text)
-            v.setStyleSheet("color:#111827; font-size:16px;")
+            v.setStyleSheet("color:#111827; font-size:22px;")
             self.detail_labels[key] = v
             row.addWidget(k)
             row.addWidget(v)
@@ -693,7 +693,7 @@ class MediTrackWindow(QMainWindow):
         mc.addWidget(self._card_title("Medications"))
         self.meds_text = QTextEdit()
         self.meds_text.setReadOnly(True)
-        self.meds_text.setStyleSheet("font-size:15px;")
+        self.meds_text.setStyleSheet("font-size:20px;")
         mc.addWidget(self.meds_text)
         mid_row.addWidget(meds_card, 1)
 
@@ -703,7 +703,7 @@ class MediTrackWindow(QMainWindow):
         rc.addWidget(self._card_title("Clinical records"))
         self.records_text = QTextEdit()
         self.records_text.setReadOnly(True)
-        self.records_text.setStyleSheet("font-size:15px;")
+        self.records_text.setStyleSheet("font-size:20px;")
         rc.addWidget(self.records_text)
         mid_row.addWidget(rec_card, 1)
 
@@ -968,7 +968,7 @@ class MediTrackWindow(QMainWindow):
 if __name__ == "__main__":
     import sys
     app = QApplication(sys.argv)
-    app.setFont(QFont("Segoe UI", 10))
+    app.setFont(QFont("Segoe UI", 18))
 
     login = LoginDialog()
     if login.exec_() != QDialog.Accepted or not login.user:
