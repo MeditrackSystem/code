@@ -571,7 +571,7 @@ class MediTrackWindow(QMainWindow):
     def _build_ui(self):
         central = QWidget()
         self.setCentralWidget(central)
-        outer = QVBoxLayout(central)
+        outer = QHBoxLayout(central)
         outer.setContentsMargins(0, 0, 0, 0)
         outer.setSpacing(0)
 
@@ -579,26 +579,43 @@ class MediTrackWindow(QMainWindow):
         sidebar = card_frame()
         sidebar.setFixedWidth(300)
         side = QVBoxLayout(sidebar)
-        side.setContentsMargins(16, 16, 16, 16)
-        side.setSpacing(12)
+        side.setContentsMargins(20, 24, 20, 24)
+        side.setSpacing(14)
 
-        title = QLabel("MediTrack")
-        title.setObjectName("title")
-        side.addWidget(title)
-        sub = QLabel("Hospital Management")
+        # Logo
+        logo = QLabel("🏥 MediTrack")
+        logo.setObjectName("title")
+        side.addWidget(logo)
+        sub = QLabel("Hospital Management System")
         sub.setObjectName("subtitle")
         side.addWidget(sub)
 
-        side.addWidget(self._section("Signed in"))
-        user_name = self.current_user.get("name", "Unknown")
-        self.current_user_label = QLabel(user_name)
-        self.current_user_label.setStyleSheet("font-weight:600; color:#1e3a8a;")
-        side.addWidget(self.current_user_label)
+        # Profile section
+        profile_card = QFrame()
+        profile_card.setStyleSheet("background:#f8fafc; border-radius:12px; padding:10px;")
+        pl = QVBoxLayout(profile_card)
+        pl.setContentsMargins(12, 12, 12, 12)
+        pl.setSpacing(4)
+        self.current_user_label = QLabel(self.current_user.get("name", "Unknown"))
+        self.current_user_label.setStyleSheet("font-weight:700; color:#1e3a8a; font-size:18px;")
+        pl.addWidget(self.current_user_label)
+        role_badge = QLabel("SYSTEM ADMINISTRATOR")
+        role_badge.setStyleSheet("background:#2563eb; color:white; border-radius:8px; padding:4px 8px; font-size:12px; font-weight:700;")
+        role_badge.setAlignment(Qt.AlignCenter)
+        pl.addWidget(role_badge)
+        side.addWidget(profile_card)
 
-        side.addWidget(self._section("Wireless sensor"))
+        # Wireless sensor section
+        side.addWidget(self._section("Wireless Sensor"))
         self.bt_toggle = QCheckBox("Enable Bluetooth sensor")
         self.bt_toggle.toggled.connect(self._on_bt_toggle)
         side.addWidget(self.bt_toggle)
+
+        # RFID status indicator
+        self.rfid_status_indicator = QLabel("● Waiting for scan")
+        self.rfid_status_indicator.setStyleSheet("color:#64748b; font-weight:600; font-size:16px;")
+        side.addWidget(self.rfid_status_indicator)
+
         self.status_label = QLabel("Status: Bluetooth off")
         self.status_label.setObjectName("status")
         side.addWidget(self.status_label)
@@ -615,50 +632,54 @@ class MediTrackWindow(QMainWindow):
         # Front / scan page
         front = QWidget()
         front_layout = QVBoxLayout(front)
-        front_layout.setAlignment(Qt.AlignCenter)
-        front_layout.setSpacing(24)
+        front_layout.setContentsMargins(40, 40, 40, 40)
+        front_layout.setSpacing(20)
+        front_layout.addStretch(1)
 
         front_title = QLabel("Ready to Scan")
-        front_title.setStyleSheet("font-size:44px; font-weight:700; color:#1e3a8a;")
+        front_title.setStyleSheet("font-size:40px; font-weight:700; color:#1e3a8a;")
         front_title.setAlignment(Qt.AlignCenter)
         front_layout.addWidget(front_title)
 
         front_sub = QLabel("Scan an RFID wristband to view patient information")
-        front_sub.setStyleSheet("font-size:22px; color:#6b7280;")
+        front_sub.setStyleSheet("font-size:20px; color:#6b7280;")
         front_sub.setAlignment(Qt.AlignCenter)
         front_layout.addWidget(front_sub)
 
         self.scan_anim = ScanAnimationWidget()
+        self.scan_anim.setFixedSize(300, 300)
         front_layout.addWidget(self.scan_anim, 0, Qt.AlignCenter)
 
         self.front_status = QLabel("Waiting for scan...")
-        self.front_status.setStyleSheet("font-size:24px; font-weight:600; color:#2563eb;")
+        self.front_status.setStyleSheet("font-size:22px; font-weight:600; color:#2563eb;")
         self.front_status.setAlignment(Qt.AlignCenter)
         front_layout.addWidget(self.front_status)
 
+        front_layout.addStretch(1)
         self.stack.addWidget(front)
 
         # Result page
         result = QWidget()
         result_layout = QVBoxLayout(result)
+        result_layout.setContentsMargins(24, 24, 24, 24)
         result_layout.setSpacing(16)
 
-        # Patient card
+        # Patient profile card
         patient_card = card_frame()
         pc = QHBoxLayout(patient_card)
-        pc.setContentsMargins(18, 18, 18, 18)
-        pc.setSpacing(18)
+        pc.setContentsMargins(24, 24, 24, 24)
+        pc.setSpacing(24)
 
         self.photo_label = QLabel("No photo")
-        self.photo_label.setFixedSize(200, 200)
+        self.photo_label.setFixedSize(180, 180)
         self.photo_label.setAlignment(Qt.AlignCenter)
-        self.photo_label.setStyleSheet("background:#eff6ff; border-radius:100px; color:#2563eb; font-weight:600;")
+        self.photo_label.setStyleSheet("background:#eff6ff; border-radius:90px; color:#2563eb; font-weight:600; font-size:16px;")
         pc.addWidget(self.photo_label, 0, Qt.AlignTop)
 
         details = QVBoxLayout()
         details.setSpacing(8)
         self.name_label = QLabel("No patient loaded")
-        self.name_label.setStyleSheet("font-size:34px; font-weight:700; color:#1e3a8a;")
+        self.name_label.setStyleSheet("font-size:30px; font-weight:700; color:#1e3a8a;")
         details.addWidget(self.name_label)
 
         self.detail_labels = {}
@@ -671,9 +692,9 @@ class MediTrackWindow(QMainWindow):
         ]:
             row = QHBoxLayout()
             k = QLabel(f"{key}:")
-            k.setStyleSheet("font-weight:600; color:#374151; font-size:22px;")
+            k.setStyleSheet("font-weight:600; color:#374151; font-size:18px;")
             v = QLabel(text)
-            v.setStyleSheet("color:#111827; font-size:22px;")
+            v.setStyleSheet("color:#111827; font-size:18px;")
             self.detail_labels[key] = v
             row.addWidget(k)
             row.addWidget(v)
@@ -683,33 +704,44 @@ class MediTrackWindow(QMainWindow):
         pc.addLayout(details, 1)
         result_layout.addWidget(patient_card)
 
-        # meds + records
+        # Medications + Clinical records
         mid_row = QHBoxLayout()
         mid_row.setSpacing(16)
 
         meds_card = card_frame()
         mc = QVBoxLayout(meds_card)
-        mc.setContentsMargins(16, 14, 16, 14)
+        mc.setContentsMargins(18, 16, 18, 16)
         mc.addWidget(self._card_title("Medications"))
-        self.meds_text = QTextEdit()
-        self.meds_text.setReadOnly(True)
-        self.meds_text.setStyleSheet("font-size:20px;")
-        mc.addWidget(self.meds_text)
+        self.meds_container = QWidget()
+        self.meds_layout = QVBoxLayout(self.meds_container)
+        self.meds_layout.setSpacing(10)
+        self.meds_layout.addStretch(1)
+        scroll_meds = QScrollArea()
+        scroll_meds.setWidgetResizable(True)
+        scroll_meds.setWidget(self.meds_container)
+        scroll_meds.setStyleSheet("border:none;")
+        mc.addWidget(scroll_meds, 1)
         mid_row.addWidget(meds_card, 1)
 
         rec_card = card_frame()
         rc = QVBoxLayout(rec_card)
-        rc.setContentsMargins(16, 14, 16, 14)
-        rc.addWidget(self._card_title("Clinical records"))
-        self.records_text = QTextEdit()
-        self.records_text.setReadOnly(True)
-        self.records_text.setStyleSheet("font-size:20px;")
-        rc.addWidget(self.records_text)
+        rc.setContentsMargins(18, 16, 18, 16)
+        rc.addWidget(self._card_title("Clinical Records"))
+        self.records_container = QWidget()
+        self.records_layout = QVBoxLayout(self.records_container)
+        self.records_layout.setSpacing(10)
+        self.records_layout.addStretch(1)
+        scroll_recs = QScrollArea()
+        scroll_recs.setWidgetResizable(True)
+        scroll_recs.setWidget(self.records_container)
+        scroll_recs.setStyleSheet("border:none;")
+        rc.addWidget(scroll_recs, 1)
         mid_row.addWidget(rec_card, 1)
 
         result_layout.addLayout(mid_row, 1)
 
         scan_again_btn = QPushButton("Scan Again")
+        scan_again_btn.setMinimumHeight(44)
         scan_again_btn.clicked.connect(self.back_to_front)
         result_layout.addWidget(scan_again_btn, 0, Qt.AlignRight)
 
@@ -765,9 +797,11 @@ class MediTrackWindow(QMainWindow):
         for v in self.detail_labels.values():
             v.setText("-")
         self._set_photo(None)
-        self.meds_text.setPlainText("")
-        self.records_text.setPlainText("")
+        self._clear_layout(self.meds_layout)
+        self._clear_layout(self.records_layout)
         self.front_status.setText("Waiting for scan...")
+        self.rfid_status_indicator.setText("● Waiting for scan")
+        self.rfid_status_indicator.setStyleSheet("color:#64748b; font-weight:600; font-size:16px;")
         self.stack.setCurrentIndex(0)
 
     def _on_status(self, text):
@@ -788,6 +822,8 @@ class MediTrackWindow(QMainWindow):
         bundle, msg = get_bundle(uid)
         if bundle is None:
             self.status_label.setText("Tag not recognized")
+            self.rfid_status_indicator.setText("● Unknown RFID tag")
+            self.rfid_status_indicator.setStyleSheet("color:#dc2626; font-weight:600; font-size:16px;")
             self.log(msg)
             log_scan("", user_id, reader_type, "Unknown tag")
             QMessageBox.warning(self, "Unknown tag", msg)
@@ -808,21 +844,12 @@ class MediTrackWindow(QMainWindow):
         self.detail_labels["Birth date"].setText(p["birth_date"])
         self._set_photo(p["id"])
 
-        lines = []
-        for order, admin in bundle["meds"]:
-            status = admin["status"] if admin else "No administration record"
-            admin_time = admin["administered_at"] if admin and admin["administered_at"] else "-"
-            lines.append(
-                f"{order['medication']}  ({order['dose']}, {order['route']})\n"
-                f"  Schedule: {order['frequency']}\n"
-                f"  Status: {status}   |   Administered: {admin_time}\n"
-            )
-        self.meds_text.setPlainText("\n".join(lines) if lines else "No active medication orders.")
-
-        rlines = [f"[{r['record_type']}] {r['note']}  ({r['recorded_at']})" for r in bundle["records"]]
-        self.records_text.setPlainText("\n".join(rlines) if rlines else "No clinical records.")
+        self._render_medications(bundle)
+        self._render_records(bundle)
 
         self.status_label.setText("Patient loaded")
+        self.rfid_status_indicator.setText("● Patient recognized")
+        self.rfid_status_indicator.setStyleSheet("color:#16a34a; font-weight:600; font-size:16px;")
         self.log(f"Loaded patient: {p['name']} ({p['patient_code']})")
 
         if uid:
@@ -887,6 +914,70 @@ class MediTrackWindow(QMainWindow):
 
     def current_user_id(self):
         return self.current_user.get("id", "")
+
+    def _clear_layout(self, layout):
+        while layout.count():
+            item = layout.takeAt(0)
+            w = item.widget()
+            if w is not None:
+                w.deleteLater()
+            elif item.layout() is not None:
+                self._clear_layout(item.layout())
+
+    def _render_medications(self, bundle):
+        self._clear_layout(self.meds_layout)
+        meds = bundle.get("meds", [])
+        if not meds:
+            lbl = QLabel("No active medication orders.")
+            lbl.setStyleSheet("color:#64748b; font-size:16px;")
+            self.meds_layout.addWidget(lbl)
+            self.meds_layout.addStretch(1)
+            return
+        for order, admin in meds:
+            status = admin["status"] if admin else "Pending"
+            admin_time = admin["administered_at"] if admin and admin["administered_at"] else "-"
+            color = {"Given": "#16a34a", "Pending": "#ea580c", "Missed": "#dc2626", "Held": "#ca8a04", "Refused": "#dc2626"}.get(status, "#64748b")
+            card = QFrame()
+            card.setStyleSheet("background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:10px;")
+            cl = QVBoxLayout(card)
+            cl.setSpacing(4)
+            name = QLabel(f"💊 {order['medication']}")
+            name.setStyleSheet("font-weight:700; font-size:17px; color:#1e3a8a;")
+            cl.addWidget(name)
+            cl.addWidget(QLabel(f"Dose: {order['dose']}   |   Route: {order['route']}"))
+            cl.addWidget(QLabel(f"Schedule: {order['frequency']}"))
+            badge = QLabel(status.upper())
+            badge.setStyleSheet(f"background:{color}; color:white; border-radius:8px; padding:3px 8px; font-size:12px; font-weight:700;")
+            badge.setAlignment(Qt.AlignCenter)
+            cl.addWidget(badge)
+            cl.addWidget(QLabel(f"Administered: {admin_time}"))
+            self.meds_layout.addWidget(card)
+        self.meds_layout.addStretch(1)
+
+    def _render_records(self, bundle):
+        self._clear_layout(self.records_layout)
+        records = bundle.get("records", [])
+        if not records:
+            lbl = QLabel("No clinical records.")
+            lbl.setStyleSheet("color:#64748b; font-size:16px;")
+            self.records_layout.addWidget(lbl)
+            self.records_layout.addStretch(1)
+            return
+        icons = {"Diagnosis": "🩺", "Allergy": "⚠️", "History": "📜", "Note": "📝"}
+        for r in records:
+            rtype = r.get("record_type", "Note")
+            icon = icons.get(rtype, "📄")
+            card = QFrame()
+            card.setStyleSheet("background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:10px;")
+            cl = QVBoxLayout(card)
+            cl.setSpacing(4)
+            title = QLabel(f"{icon} {rtype}")
+            title.setStyleSheet("font-weight:700; font-size:16px; color:#1e3a8a;")
+            cl.addWidget(title)
+            cl.addWidget(QLabel(r.get("note", "")))
+            cl.addWidget(QLabel(f"Date: {r.get('recorded_at', '')}"))
+            self.records_layout.addWidget(card)
+        self.records_layout.addStretch(1)
 
     def _set_photo(self, patient_id):
         if patient_id is None:
