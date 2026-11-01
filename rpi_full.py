@@ -470,8 +470,8 @@ class ScanAnimationWidget(QWidget):
 
         # pulsing background glow
         grad = QRadialGradient(cx, cy, maxr)
-        grad.setColorAt(0, QColor(37, 99, 235, 60))
-        grad.setColorAt(1, QColor(37, 99, 235, 0))
+        grad.setColorAt(0, QColor(1, 51, 113, 70))
+        grad.setColorAt(1, QColor(1, 51, 113, 0))
         painter.setBrush(grad)
         painter.setPen(Qt.NoPen)
         painter.drawEllipse(cx - maxr, cy - maxr, 2 * maxr, 2 * maxr)
@@ -481,7 +481,7 @@ class ScanAnimationWidget(QWidget):
             progress = (self._phase + i * 72) % 360 / 360.0
             r = int(maxr * (0.2 + 0.75 * progress))
             alpha = int(220 * (1 - progress))
-            pen = QPen(QColor(37, 99, 235, alpha))
+            pen = QPen(QColor(1, 51, 113, alpha))
             pen.setWidth(3)
             painter.setPen(pen)
             painter.setBrush(Qt.NoBrush)
@@ -489,7 +489,7 @@ class ScanAnimationWidget(QWidget):
 
         # center
         painter.setPen(Qt.NoPen)
-        painter.setBrush(QColor(30, 58, 138))
+        painter.setBrush(QColor(1, 51, 113))
         painter.drawEllipse(cx - 26, cy - 26, 52, 52)
         painter.setPen(QColor("white"))
         painter.setFont(QFont("Segoe UI", 12, QFont.Bold))
@@ -526,46 +526,38 @@ class MediTrackWindow(QMainWindow):
         return """
         QMainWindow {
             background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-                stop:0 #eaf2ff, stop:1 #f7faff);
+                stop:0 #f0f9ff, stop:1 #e6f4f1);
         }
-        QLabel { color: #1f2937; font-size: 24px; }
-        QLabel#title { color: #1e3a8a; font-size: 40px; font-weight: 800; }
-        QLabel#subtitle { color: #64748b; font-size: 22px; }
-        QLabel#status { font-size: 24px; font-weight: 600; color: #2563eb; }
+        QLabel { color: #0f172a; font-size: 24px; }
+        QLabel#title { color: #013371; font-size: 34px; font-weight: 800; }
+        QLabel#subtitle { color: #0f766e; font-size: 18px; }
+        QLabel#status { font-size: 20px; font-weight: 600; color: #013371; }
         QPushButton {
-            font-size: 22px; background: #2563eb; color: white;
+            font-size: 22px; background: #013371; color: white;
             border: none; border-radius: 14px; padding: 14px 28px;
             font-weight: 600;
         }
-        QPushButton:hover { background: #1d4ed8; }
-        QPushButton:pressed { background: #1e40af; }
+        QPushButton:hover { background: #022a5c; }
+        QPushButton:pressed { background: #011f45; }
+        QPushButton:disabled { background: #94a3b8; color: #f8fafc; }
         QPushButton#secondary {
-            background: white; color: #2563eb; border: 1px solid #bfdbfe;
+            background: white; color: #013371; border: 1px solid #99f6e4;
         }
-        QPushButton#secondary:hover { background: #eff6ff; }
-        QCheckBox { font-size: 16px; color: #1f2937; }
-        QLineEdit { font-size: 16px; border-radius: 10px; padding: 8px; }
-        QTextEdit { font-size: 16px; border-radius: 12px; }
-        QPushButton {
-            background: #2563eb; color: white; border: none;
-            border-radius: 10px; padding: 9px 16px; font-weight: 600;
-        }
-        QPushButton:hover { background: #1d4ed8; }
-        QPushButton:pressed { background: #1e40af; }
-        QPushButton:disabled { background: #93c5fd; color: #f9fafb; }
-        QPushButton#secondary {
-            background: white; color: #2563eb; border: 1px solid #bfdbfe;
-        }
-        QPushButton#secondary:hover { background: #eff6ff; }
-        QComboBox, QLineEdit {
-            border: 1px solid #d1d5db; border-radius: 10px;
-            padding: 8px 10px; background: white; min-height: 18px;
+        QPushButton#secondary:hover { background: #f0fdfa; }
+        QCheckBox { font-size: 20px; color: #0f172a; }
+        QLineEdit, QComboBox {
+            border: 1px solid #cbd5e1; border-radius: 12px;
+            padding: 10px 12px; background: white; font-size: 20px;
         }
         QTextEdit {
-            background: white; border: 1px solid #e5e7eb;
-            border-radius: 10px; padding: 6px;
+            background: white; border: 1px solid #cbd5e1;
+            border-radius: 12px; padding: 8px; font-size: 20px;
         }
-        QFrame#card { background: white; border: 1px solid #e5e7eb; border-radius: 14px; }
+        QFrame#card {
+            background: white; border: 1px solid #d9e7ec;
+            border-radius: 18px;
+        }
+        QScrollArea { border: none; background: transparent; }
         """
 
     def _build_ui(self):
@@ -583,7 +575,13 @@ class MediTrackWindow(QMainWindow):
         side.setSpacing(14)
 
         # Logo
-        logo = QLabel("🏥 MediTrack")
+        logo_pix = QPixmap(str(BASE_DIR / "logo.png"))
+        if not logo_pix.isNull():
+            logo_img = QLabel()
+            logo_img.setPixmap(logo_pix.scaled(72, 72, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+            logo_img.setAlignment(Qt.AlignCenter)
+            side.addWidget(logo_img)
+        logo = QLabel("MediTrack")
         logo.setObjectName("title")
         side.addWidget(logo)
         sub = QLabel("Hospital Management System")
