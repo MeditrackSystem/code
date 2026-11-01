@@ -17,6 +17,9 @@ import hashlib
 import os
 import threading
 import traceback
+
+# Force X11 on Wayland systems (fixes input issues with PyQt5)
+os.environ.setdefault("QT_QPA_PLATFORM", "xcb")
 from datetime import datetime
 from pathlib import Path
 
@@ -309,7 +312,8 @@ class LoginDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle("MediTrack Login")
         self.setModal(True)
-        self.setWindowState(Qt.WindowFullScreen)
+        self.setWindowFlags(Qt.Window | Qt.FramelessWindowHint)
+        self.showFullScreen()
         self.user = None
 
         outer = QVBoxLayout(self)
@@ -959,8 +963,8 @@ class MediTrackWindow(QMainWindow):
 if __name__ == "__main__":
     import sys
     app = QApplication(sys.argv)
-    app.setFont(QFont("Segoe UI", 16))
-    app.setStyleSheet("QWidget { font-family: 'Segoe UI', 'Inter', sans-serif; }")
+    app.setFont(QFont("Liberation Sans", 16))
+    app.setStyleSheet("QWidget { font-family: 'Liberation Sans', 'DejaVu Sans', sans-serif; }")
 
     login = LoginDialog()
     if login.exec_() != QDialog.Accepted or not login.user:
