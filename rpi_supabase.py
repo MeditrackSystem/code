@@ -146,7 +146,7 @@ def log_scan(tag_id, user_id, reader_type, outcome):
                 tag_token = t.get("tag_token")
                 break
         if tag_token:
-            sb_log_scan(tag_token, None, reader_type, outcome)
+            sb_log_scan(tag_token, user_id, reader_type, outcome)
         else:
             sb_insert("scan_logs", {
                 "reader_type": reader_type,
@@ -168,7 +168,7 @@ def log_audit(user_id, action, record_type, record_id):
     })
     # sync to supabase
     sb_insert("audit_logs", {
-        "user_id": None,
+        "user_id": int(user_id) if str(user_id).isdigit() else None,
         "action": action,
         "record_type": record_type,
         "record_id": str(record_id),
@@ -224,7 +224,6 @@ def sync_csv_to_supabase():
     sb_rows = []
     for p in patients:
         sb_rows.append({
-            "id": int(p["id"]) if str(p["id"]).isdigit() else None,
             "patient_code": p["patient_code"],
             "name": p["name"],
             "birth_date": p["birth_date"] or None,
@@ -250,6 +249,7 @@ def sync_csv_to_supabase():
     for t in tags:
         t_rows.append({
             "tag_token": t["tag_token"],
+            "patient_id": int(t["patient_id"]) if str(t.get("patient_id", "")).isdigit() else None,
             "status": t["status"],
             "assigned_at": t["assigned_at"] or None,
             "deactivated_at": t["deactivated_at"] or None,
@@ -300,7 +300,7 @@ def sb_log_scan(tag_token, user_id, reader_type, outcome):
             tid = r.json()[0]["id"]
         sb_insert("scan_logs", {
             "tag_id": tid,
-            "user_id": None,
+            "user_id": int(user_id) if str(user_id).isdigit() else None,
             "reader_type": reader_type,
             "scanned_at": datetime.now().isoformat(timespec="seconds"),
             "outcome": outcome,
