@@ -548,7 +548,7 @@ class ScanAnimationWidget(QWidget):
 class ToggleSwitch(QCheckBox):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setFixedSize(52, 28)
+        self.setFixedSize(88, 44)
         self.setCursor(Qt.PointingHandCursor)
 
     def paintEvent(self, event):
@@ -561,11 +561,11 @@ class ToggleSwitch(QCheckBox):
             bg = QColor("#CBD5E1")
         painter.setBrush(QBrush(bg))
         painter.setPen(Qt.NoPen)
-        painter.drawRoundedRect(0, 0, self.width(), self.height(), 14, 14)
+        painter.drawRoundedRect(0, 0, self.width(), self.height(), 22, 22)
         # knob
-        knob_x = self.width() - 24 if self.isChecked() else 4
+        knob_x = self.width() - 40 if self.isChecked() else 4
         painter.setBrush(QBrush(QColor("#FFFFFF")))
-        painter.drawEllipse(knob_x, 4, 20, 20)
+        painter.drawEllipse(knob_x, 4, 36, 36)
 
 # --------------------------- Main window ---------------------------
 class MediTrackWindow(QMainWindow):
@@ -862,8 +862,9 @@ class MediTrackWindow(QMainWindow):
     def _on_bt_toggle(self, checked):
         if checked:
             if not HAS_BLE:
-                self.status_label.setText("Status: BLE not available")
+                self.status_label.setText("Status: Bleak not installed")
                 self.bt_toggle.setChecked(False)
+                QMessageBox.warning(self, "Missing dependency", "bleak is not installed.\nRun: pip install bleak")
                 return
             if self.worker is None or not self.worker.isRunning():
                 self.worker = AutoBleWorker()
