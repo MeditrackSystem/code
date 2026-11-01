@@ -929,9 +929,11 @@ class MediTrackWindow(QMainWindow):
             self.status_label.setText("Tag not recognized")
             self.rfid_status_indicator.setText("● Unknown RFID tag")
             self.rfid_status_indicator.setStyleSheet("color:#fca5a5; font-weight:600; font-size:16px;")
+            self.front_status.setText("Unrecognized RFID tag")
+            self.front_status.setStyleSheet("font-size:22px; font-weight:600; color:#DC2626;")
+            self.stack.setCurrentIndex(0)
             self.log(msg)
             log_scan("", user_id, reader_type, "Unknown tag")
-            QMessageBox.warning(self, "Unknown tag", msg)
             return
 
         self._display_bundle(bundle, reader_type, uid)
