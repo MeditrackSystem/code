@@ -529,11 +529,7 @@ class AutoBleWorker(QThread):
                     self.status.emit(f"notify err: {e}")
             await client.start_notify(CHARACTERISTIC_UUID, on_notify)
             while self.running and client.is_connected:
-                await asyncio.sleep(5)
-                try:
-                    await client.read_gatt_char(CHARACTERISTIC_UUID)
-                except Exception:
-                    break
+                await asyncio.sleep(1)
             try:
                 await client.stop_notify(CHARACTERISTIC_UUID)
             except Exception:
