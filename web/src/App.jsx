@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { supabase } from './supabaseClient'
 import Login from './pages/Login'
@@ -25,7 +25,7 @@ export default function App() {
   function logout() { clearSession(); setUser(null) }
 
   return (
-    <BrowserRouter>
+    <HashRouter>
       <Routes>
         <Route path="/login" element={user ? <Navigate to="/" /> : <Login onLogin={login} />} />
         <Route path="/" element={user ? <Layout user={user} onLogout={logout} /> : <Navigate to="/login" />}>
@@ -38,6 +38,6 @@ export default function App() {
           <Route path="users" element={user?.role === 'Administrator' ? <Users /> : <Navigate to="/" />} />
         </Route>
       </Routes>
-    </BrowserRouter>
+    </HashRouter>
   )
 }
