@@ -725,16 +725,6 @@ class MediTrackWindow(QMainWindow):
         self.current_user_label.setAlignment(Qt.AlignCenter)
         side.addWidget(self.current_user_label)
 
-        scan_again_top = QPushButton("Scan Again")
-        scan_again_top.setObjectName("secondary")
-        scan_again_top.clicked.connect(self.back_to_front)
-        side.addWidget(scan_again_top)
-
-        logout_btn = QPushButton("Logout")
-        logout_btn.setObjectName("secondary")
-        logout_btn.clicked.connect(self.close)
-        side.addWidget(logout_btn)
-
         side.addWidget(self._section("Wireless Sensor"))
         toggle_row = QHBoxLayout()
         toggle_label = QLabel("Bluetooth")
@@ -766,6 +756,17 @@ class MediTrackWindow(QMainWindow):
         side.addWidget(self.status_label)
 
         side.addStretch(1)
+
+        scan_again_top = QPushButton("Scan Again")
+        scan_again_top.setObjectName("secondary")
+        scan_again_top.clicked.connect(self.back_to_front)
+        side.addWidget(scan_again_top)
+
+        logout_btn = QPushButton("Logout")
+        logout_btn.setObjectName("secondary")
+        logout_btn.clicked.connect(self.close)
+        side.addWidget(logout_btn)
+
         main_layout.addWidget(sidebar)
 
         # ---------- Stacked pages ----------
