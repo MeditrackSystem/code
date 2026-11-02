@@ -85,13 +85,15 @@ export default function PatientDetail() {
   }
 
   async function recordAdmin(orderId, status) {
+    const user = getSession()
+    const optimistic = { id: `tmp-${Date.now()}`, order_id: orderId, status, administered_at: new Date().toISOString(), administered_by: user?.id }
+    setAdmins(prev => [...prev, optimistic])
     setSaving(true)
     try {
-      const user = getSession()
       const { error } = await insertTolerant('medication_administrations', {
-        order_id: orderId, scheduled_at: new Date().toISOString(), administered_at: new Date().toISOString(), status, administered_by: user.id, notes: ''
+        order_id: orderId, scheduled_at: new Date().toISOString(), administered_at: new Date().toISOString(), status, administered_by: user?.id, notes: ''
       }, ['administered_by'])
-      if (error) { setMsg(error.message); return }
+      if (error) { setMsg(error.message); await load(); return }
       setMsg('')
       await load()
     } finally {
