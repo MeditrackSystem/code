@@ -33,7 +33,8 @@ from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton, QComboBox, QLineEdit, QTextEdit, QFrame,
     QScrollArea, QMessageBox, QDialog, QDialogButtonBox, QFormLayout,
-    QGridLayout, QCheckBox, QStackedWidget, QGraphicsDropShadowEffect
+    QGridLayout, QCheckBox, QStackedWidget, QGraphicsDropShadowEffect,
+    QScroller
 )
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -885,6 +886,8 @@ class MediTrackWindow(QMainWindow):
         result_scroll.setWidgetResizable(True)
         result_scroll.setWidget(result)
         result_scroll.setStyleSheet("border:none; background:transparent;")
+        result_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        QScroller.grabGesture(result_scroll, QScroller.TouchGesture)
         self.stack.addWidget(result_scroll)
 
         outer.addWidget(main_wrapper)
