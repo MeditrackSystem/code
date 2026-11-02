@@ -55,7 +55,7 @@ export default function AuditLogs() {
   }, [rows, search, filter, staff])
 
   const stats = [
-    { label: 'Events', value: rows.length, icon: 'file', foot: 'Latest 300 records' },
+    { label: 'Events', value: rows.length, icon: 'file', foot: 'Latest 100 records' },
     { label: 'Staff Involved', value: uniqueUsers, icon: 'users', foot: 'Accounts with recorded actions' },
     { label: 'Action Types', value: Math.max(0, actions.length - 1), icon: 'activity', foot: 'Distinct operations' },
   ]
