@@ -519,11 +519,11 @@ class LoginDialog(QDialog):
         self.setStyleSheet("QDialog { background: #F4F7FB; }")
 
         card = QFrame()
-        card.setFixedWidth(500)
+        card.setFixedWidth(920)
         card.setStyleSheet("""
             QFrame {
                 background: white;
-                border: 1px solid #E2E8F0;
+                border: none;
                 border-radius: 16px;
             }
         """)
@@ -533,30 +533,45 @@ class LoginDialog(QDialog):
         shadow.setColor(QColor(0, 0, 0, 30))
         card.setGraphicsEffect(shadow)
 
-        cl = QVBoxLayout(card)
-        cl.setContentsMargins(40, 40, 40, 40)
-        cl.setSpacing(16)
+        row = QHBoxLayout(card)
+        row.setContentsMargins(24, 24, 24, 24)
+        row.setSpacing(24)
+
+        # Left: on-screen keyboard
+        kb_wrap = QVBoxLayout()
+        kb_label = QLabel("On-screen keyboard")
+        kb_label.setStyleSheet("font-size:14px; font-weight:600; color:#64748B;")
+        kb_label.setAlignment(Qt.AlignCenter)
+        kb_wrap.addWidget(kb_label)
+        self.keyboard = VirtualKeyboard(self, submit=self.try_login)
+        kb_wrap.addWidget(self.keyboard)
+        kb_wrap.addStretch(1)
+        row.addLayout(kb_wrap, 0)
+
+        # Right: login form
+        cl = QVBoxLayout()
+        cl.setSpacing(14)
 
         logo_pix = QPixmap(str(BASE_DIR / "logo.png"))
         if not logo_pix.isNull():
             logo_lbl = QLabel()
-            logo_lbl.setPixmap(logo_pix.scaled(96, 96, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+            logo_lbl.setPixmap(logo_pix.scaled(72, 72, Qt.KeepAspectRatio, Qt.SmoothTransformation))
             logo_lbl.setAlignment(Qt.AlignCenter)
             cl.addWidget(logo_lbl)
 
         title = QLabel("MediTrack")
-        title.setStyleSheet("font-size:32px; font-weight:800; color:#142B4A;")
+        title.setStyleSheet("font-size:30px; font-weight:800; color:#142B4A;")
         title.setAlignment(Qt.AlignCenter)
         cl.addWidget(title)
 
         sub = QLabel("Hospital Management System")
-        sub.setStyleSheet("font-size:16px; color:#64748B;")
+        sub.setStyleSheet("font-size:14px; color:#64748B;")
         sub.setAlignment(Qt.AlignCenter)
         cl.addWidget(sub)
 
         self.username_input = QLineEdit()
         self.username_input.setPlaceholderText("Username")
-        self.username_input.setMinimumHeight(48)
+        self.username_input.setMinimumHeight(44)
         self.username_input.setFocusPolicy(Qt.StrongFocus)
         cl.addWidget(self.username_input)
         self.username_input.setFocus()
@@ -564,22 +579,21 @@ class LoginDialog(QDialog):
         self.password_input = QLineEdit()
         self.password_input.setPlaceholderText("Password")
         self.password_input.setEchoMode(QLineEdit.Password)
-        self.password_input.setMinimumHeight(48)
+        self.password_input.setMinimumHeight(44)
         cl.addWidget(self.password_input)
 
         login_btn = QPushButton("Sign In")
-        login_btn.setMinimumHeight(48)
+        login_btn.setMinimumHeight(44)
         login_btn.clicked.connect(self.try_login)
         cl.addWidget(login_btn)
 
         self.status = QLabel("")
-        self.status.setStyleSheet("color:#DC2626; font-size:14px;")
+        self.status.setStyleSheet("color:#DC2626; font-size:13px;")
         self.status.setAlignment(Qt.AlignCenter)
         cl.addWidget(self.status)
+        cl.addStretch(1)
 
-        self.keyboard = VirtualKeyboard(self, submit=self.try_login)
-        cl.addWidget(self.keyboard)
-
+        row.addLayout(cl, 1)
         outer.addWidget(card, 0, Qt.AlignCenter)
 
     def try_login(self):
@@ -801,10 +815,7 @@ class MediTrackWindow(QMainWindow):
         pc.setSpacing(24)
 
         self.photo_label = QLabel("No photo")
-        self.photo_label.setFixedSize(150, 150)
-        self.photo_label.setAlignment(Qt.AlignCenter)
-        self.photo_label.setStyleSheet("background:#F1F5F9; border-radius:75px; color:#2563EB; font-weight:600; font-size:14px;")
-        pc.addWidget(self.photo_label, 0, Qt.AlignTop)
+        self.photo_label.hide()
 
         details = QVBoxLayout()
         details.setSpacing(8)
@@ -875,7 +886,11 @@ class MediTrackWindow(QMainWindow):
         scan_again_btn.clicked.connect(self.back_to_front)
         result_layout.addWidget(scan_again_btn, 0, Qt.AlignRight)
 
-        self.stack.addWidget(result)
+        result_scroll = QScrollArea()
+        result_scroll.setWidgetResizable(True)
+        result_scroll.setWidget(result)
+        result_scroll.setStyleSheet("border:none; background:transparent;")
+        self.stack.addWidget(result_scroll)
 
         outer.addWidget(main_wrapper)
         self.stack.setCurrentIndex(0)
