@@ -86,13 +86,28 @@ export default function PatientDetail() {
 
   async function recordAdmin(orderId, status) {
     const user = getSession()
-    const optimistic = { id: `tmp-${Date.now()}`, order_id: orderId, status, administered_at: new Date().toISOString(), administered_by: user?.id }
-    setAdmins(prev => [...prev, optimistic])
+    const now = new Date().toISOString()
+    const latest = admins.filter(a => a.order_id === orderId).slice(-1)[0]
+    // Optimistic update of the current status
+    if (latest) {
+      setAdmins(prev => prev.map(a => a.id === latest.id ? { ...a, status, administered_at: now } : a))
+    } else {
+      setAdmins(prev => [...prev, { id: `tmp-${Date.now()}`, order_id: orderId, status, administered_at: now, administered_by: user?.id }])
+    }
     setSaving(true)
     try {
-      const { error } = await insertTolerant('medication_administrations', {
-        order_id: orderId, scheduled_at: new Date().toISOString(), administered_at: new Date().toISOString(), status, administered_by: user?.id, notes: ''
-      }, ['administered_by'])
+      let error
+      if (latest && !String(latest.id).startsWith('tmp-')) {
+        const res = await supabase.from('medication_administrations').update({
+          status, administered_at: now, administered_by: user?.id
+        }).eq('id', latest.id)
+        error = res.error
+      } else {
+        const res = await insertTolerant('medication_administrations', {
+          order_id: orderId, scheduled_at: now, administered_at: now, status, administered_by: user?.id, notes: ''
+        }, ['administered_by'])
+        error = res.error
+      }
       if (error) { setMsg(error.message); await load(); return }
       setMsg('')
       await load()
