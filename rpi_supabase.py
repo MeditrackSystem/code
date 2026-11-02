@@ -694,41 +694,6 @@ class MediTrackWindow(QMainWindow):
         outer.setContentsMargins(0, 0, 0, 0)
         outer.setSpacing(0)
 
-        # ---------- Top bar ----------
-        topbar = QFrame()
-        topbar.setStyleSheet("background: white; border-bottom: 1px solid #E2E8F0;")
-        topbar.setFixedHeight(64)
-        tb = QHBoxLayout(topbar)
-        tb.setContentsMargins(24, 0, 24, 0)
-        tb.setSpacing(16)
-
-        logo_pix = QPixmap(str(BASE_DIR / "logo.png"))
-        if not logo_pix.isNull():
-            logo_img = QLabel()
-            logo_img.setPixmap(logo_pix.scaled(36, 36, Qt.KeepAspectRatio, Qt.SmoothTransformation))
-            tb.addWidget(logo_img)
-
-        app_title = QLabel("MediTrack")
-        app_title.setStyleSheet("font-size:22px; font-weight:700; color:#142B4A;")
-        tb.addWidget(app_title)
-        tb.addStretch(1)
-
-        self.current_user_label = QLabel(self.current_user.get("name", "Unknown"))
-        self.current_user_label.setStyleSheet("font-size:16px; font-weight:600; color:#1E293B;")
-        tb.addWidget(self.current_user_label)
-
-        scan_again_top = QPushButton("Scan Again")
-        scan_again_top.setObjectName("secondary")
-        scan_again_top.clicked.connect(self.back_to_front)
-        tb.addWidget(scan_again_top)
-
-        logout_btn = QPushButton("Logout")
-        logout_btn.setObjectName("secondary")
-        logout_btn.clicked.connect(self.close)
-        tb.addWidget(logout_btn)
-
-        outer.addWidget(topbar)
-
         # ---------- Main content ----------
         main_wrapper = QWidget()
         main_wrapper.setStyleSheet("background: #F4F7FB;")
@@ -738,10 +703,37 @@ class MediTrackWindow(QMainWindow):
 
         # Sidebar
         sidebar = card_frame()
-        sidebar.setFixedWidth(260)
+        sidebar.setFixedWidth(280)
         side = QVBoxLayout(sidebar)
         side.setContentsMargins(20, 20, 20, 20)
         side.setSpacing(14)
+
+        logo_pix = QPixmap(str(BASE_DIR / "logo.png"))
+        if not logo_pix.isNull():
+            logo_img = QLabel()
+            logo_img.setPixmap(logo_pix.scaled(48, 48, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+            logo_img.setAlignment(Qt.AlignCenter)
+            side.addWidget(logo_img)
+
+        app_title = QLabel("MediTrack")
+        app_title.setStyleSheet("font-size:20px; font-weight:700; color:#142B4A;")
+        app_title.setAlignment(Qt.AlignCenter)
+        side.addWidget(app_title)
+
+        self.current_user_label = QLabel(self.current_user.get("name", "Unknown"))
+        self.current_user_label.setStyleSheet("font-size:14px; font-weight:600; color:#1E293B;")
+        self.current_user_label.setAlignment(Qt.AlignCenter)
+        side.addWidget(self.current_user_label)
+
+        scan_again_top = QPushButton("Scan Again")
+        scan_again_top.setObjectName("secondary")
+        scan_again_top.clicked.connect(self.back_to_front)
+        side.addWidget(scan_again_top)
+
+        logout_btn = QPushButton("Logout")
+        logout_btn.setObjectName("secondary")
+        logout_btn.clicked.connect(self.close)
+        side.addWidget(logout_btn)
 
         side.addWidget(self._section("Wireless Sensor"))
         toggle_row = QHBoxLayout()
