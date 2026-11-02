@@ -549,6 +549,7 @@ class LoginDialog(QDialog):
         kb_label = QLabel("On-screen keyboard")
         kb_label.setStyleSheet("font-size:14px; font-weight:600; color:#64748B;")
         kb_label.setAlignment(Qt.AlignCenter)
+        kb_wrap.addStretch(1)
         kb_wrap.addWidget(kb_label)
         self.keyboard = VirtualKeyboard(self, submit=self.try_login)
         kb_wrap.addWidget(self.keyboard)
