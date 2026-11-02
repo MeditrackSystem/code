@@ -14,6 +14,7 @@ Features:
 import asyncio
 import csv
 import hashlib
+import json
 import os
 import threading
 
@@ -38,7 +39,20 @@ from PyQt5.QtWidgets import (
 )
 
 BASE_DIR = Path(__file__).resolve().parent
+SETTINGS_FILE = BASE_DIR / "settings.json"
 DB_DIR = BASE_DIR / "database"
+
+def load_settings():
+    try:
+        return json.loads(SETTINGS_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+def save_settings(data):
+    try:
+        SETTINGS_FILE.write_text(json.dumps(data), encoding="utf-8")
+    except Exception:
+        pass
 IMG_DIR = BASE_DIR / "images"
 LOG_DIR = BASE_DIR / "logs"
 
@@ -626,6 +640,7 @@ class MediTrackWindow(QMainWindow):
     def __init__(self, current_user=None):
         super().__init__()
         self.setWindowTitle("MediTrack")
+        self.theme = load_settings().get("theme", "light")
         self.setStyleSheet(self._stylesheet())
         self.showFullScreen()
 
@@ -654,7 +669,7 @@ class MediTrackWindow(QMainWindow):
             self.bt_toggle.setEnabled(False)
 
     def _stylesheet(self):
-        return """
+        base = """
         QMainWindow { background: #F4F7FB; }
         QLabel { color: #1E293B; font-size: 18px; }
         QLabel#title { color: #142B4A; font-size: 28px; font-weight: 800; }
@@ -686,6 +701,23 @@ class MediTrackWindow(QMainWindow):
         }
         QScrollArea { border: none; background: transparent; }
         """
+        if getattr(self, "theme", "light") == "dark":
+            for a, b in (
+                ("#F4F7FB", "#0F172A"),
+                ("#F5F7FB", "#0F172A"),
+                ("white", "#1E293B"),
+                ("#FFFFFF", "#1E293B"),
+                ("#142B4A", "#E2E8F0"),
+                ("#1E293B", "#E2E8F0"),
+                ("#374151", "#CBD5E1"),
+                ("#64748B", "#94A3B8"),
+                ("#E2E8F0", "#334155"),
+                ("#CBD5E1", "#475569"),
+                ("#F1F5F9", "#334155"),
+                ("#F8FAFC", "#334155"),
+            ):
+                base = base.replace(a, b)
+        return base
 
     def _build_ui(self):
         central = QWidget()
@@ -724,6 +756,11 @@ class MediTrackWindow(QMainWindow):
         self.current_user_label.setStyleSheet("font-size:14px; font-weight:600; color:#1E293B;")
         self.current_user_label.setAlignment(Qt.AlignCenter)
         side.addWidget(self.current_user_label)
+
+        self.theme_btn = QPushButton("Theme: " + self.theme.capitalize())
+        self.theme_btn.setObjectName("secondary")
+        self.theme_btn.clicked.connect(self._toggle_theme)
+        side.addWidget(self.theme_btn)
 
         side.addWidget(self._section("Wireless Sensor"))
         toggle_row = QHBoxLayout()
@@ -1091,6 +1128,12 @@ class MediTrackWindow(QMainWindow):
         bundle, msg = get_bundle(self._current_uid)
         if bundle is not None:
             self._display_bundle(bundle, self._current_reader_type, None)
+
+    def _toggle_theme(self):
+        self.theme = "dark" if self.theme == "light" else "light"
+        save_settings({"theme": self.theme})
+        self.setStyleSheet(self._stylesheet())
+        self.theme_btn.setText("Theme: " + self.theme.capitalize())
 
     def _set_photo(self, patient_id):
         if patient_id is None:
