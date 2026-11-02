@@ -1176,12 +1176,16 @@ if __name__ == "__main__":
             pull_supabase_to_csv()
         except Exception as e:
             print("initial pull failed:", e)
+        cycles = 0
         while True:
             try:
                 threading.Event().wait(SYNC_INTERVAL)
-                # Only push local changes periodically; pulling happens on startup
-                # (and on demand) to avoid continuous database traffic.
                 sync_csv_to_supabase()
+                # Pull remote (website) changes periodically so the Pi picks them up
+                # with a short delay, without continuous database traffic.
+                cycles += 1
+                if cycles % 5 == 0:
+                    pull_supabase_to_csv()
             except Exception as e:
                 print("sync loop error:", e)
 
