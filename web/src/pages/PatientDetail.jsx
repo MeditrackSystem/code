@@ -17,6 +17,7 @@ export default function PatientDetail() {
   const [medForm, setMedForm] = useState({ medication: '', dose: '', route: 'Oral', frequency: '' })
   const [recForm, setRecForm] = useState({ record_type: 'Note', note: '' })
   const [msg, setMsg] = useState('')
+  const [saving, setSaving] = useState(false)
 
   async function load() {
     const { data: p } = await supabase.from('patients').select('*').eq('id', id).single()
@@ -38,38 +39,58 @@ export default function PatientDetail() {
   async function assignTag(e) {
     e.preventDefault()
     if (!newTag.trim()) return
-    const { error } = await supabase.from('rfid_tags').insert({ tag_token: newTag.trim(), patient_id: id, status: 'Active', assigned_at: new Date().toISOString() })
-    if (error) { setMsg(error.message); return }
-    setNewTag('')
-    load()
+    setSaving(true)
+    try {
+      const { error } = await supabase.from('rfid_tags').insert({ tag_token: newTag.trim(), patient_id: id, status: 'Active', assigned_at: new Date().toISOString() })
+      if (error) { setMsg(error.message); return }
+      setNewTag('')
+      await load()
+    } finally {
+      setSaving(false)
+    }
   }
 
   async function addMed(e) {
     e.preventDefault()
-    const { error } = await supabase.from('medication_orders').insert({ ...medForm, patient_id: id, status: 'Active' })
-    if (error) { setMsg(error.message); return }
-    setMedForm({ medication: '', dose: '', route: 'Oral', frequency: '' })
-    load()
+    setSaving(true)
+    try {
+      const { error } = await supabase.from('medication_orders').insert({ ...medForm, patient_id: id, status: 'Active' })
+      if (error) { setMsg(error.message); return }
+      setMedForm({ medication: '', dose: '', route: 'Oral', frequency: '' })
+      await load()
+    } finally {
+      setSaving(false)
+    }
   }
 
   async function addRec(e) {
     e.preventDefault()
-    const user = getSession()
-    const { error } = await insertTolerant('medical_records', { ...recForm, patient_id: id, clinician_id: user.id, recorded_at: new Date().toISOString() }, ['clinician_id'])
-    if (error) { setMsg(error.message); return }
-    setRecForm({ record_type: 'Note', note: '' })
-    setMsg('')
-    load()
+    setSaving(true)
+    try {
+      const user = getSession()
+      const { error } = await insertTolerant('medical_records', { ...recForm, patient_id: id, clinician_id: user.id, recorded_at: new Date().toISOString() }, ['clinician_id'])
+      if (error) { setMsg(error.message); return }
+      setRecForm({ record_type: 'Note', note: '' })
+      setMsg('')
+      await load()
+    } finally {
+      setSaving(false)
+    }
   }
 
   async function recordAdmin(orderId, status) {
-    const user = getSession()
-    const { error } = await insertTolerant('medication_administrations', {
-      order_id: orderId, scheduled_at: new Date().toISOString(), administered_at: new Date().toISOString(), status, administered_by: user.id, notes: ''
-    }, ['administered_by'])
-    if (error) { setMsg(error.message); return }
-    setMsg('')
-    load()
+    setSaving(true)
+    try {
+      const user = getSession()
+      const { error } = await insertTolerant('medication_administrations', {
+        order_id: orderId, scheduled_at: new Date().toISOString(), administered_at: new Date().toISOString(), status, administered_by: user.id, notes: ''
+      }, ['administered_by'])
+      if (error) { setMsg(error.message); return }
+      setMsg('')
+      await load()
+    } finally {
+      setSaving(false)
+    }
   }
 
   if (!patient) return <div className="card"><div className="empty">Loading patient…</div></div>
@@ -119,7 +140,7 @@ export default function PatientDetail() {
           <p className="card-sub">Assign a tag token to this patient.</p>
           <form onSubmit={assignTag} className="row" style={{ marginBottom: 14 }}>
             <input className="input" style={{ flex: 1 }} placeholder="Tag token e.g. 2066071338" value={newTag} onChange={e => setNewTag(e.target.value)} />
-            <button className="btn btn-primary" type="submit">Assign</button>
+            <button className="btn btn-primary" type="submit" disabled={saving}>{saving ? 'Saving…' : 'Assign'}</button>
           </form>
           <div className="stack">
             {tags.length === 0 && <div className="muted">No RFID wristband assigned yet. Enter a tag token above.</div>}
@@ -140,7 +161,7 @@ export default function PatientDetail() {
               <option>Note</option><option>Diagnosis</option><option>Allergy</option><option>History</option>
             </select>
             <input className="input" placeholder="Write a clinical note…" value={recForm.note} onChange={e => setRecForm({ ...recForm, note: e.target.value })} required />
-            <button className="btn btn-success" type="submit">Add Record</button>
+            <button className="btn btn-success" type="submit" disabled={saving}>{saving ? 'Saving…' : 'Add Record'}</button>
           </form>
         </div>
       </div>
@@ -162,7 +183,7 @@ export default function PatientDetail() {
             </select>
           </div>
           <div className="field"><label>Frequency</label><input className="input" value={medForm.frequency} onChange={e => setMedForm({ ...medForm, frequency: e.target.value })} placeholder="Every 8 hours" /></div>
-          <div className="field" style={{ justifyContent: 'flex-end' }}><button className="btn btn-primary" type="submit">Add Order</button></div>
+          <div className="field" style={{ justifyContent: 'flex-end' }}><button className="btn btn-primary" type="submit" disabled={saving}>{saving ? 'Saving…' : 'Add Order'}</button></div>
         </form>
 
         {orders.length === 0 && (
@@ -187,7 +208,7 @@ export default function PatientDetail() {
               </div>
               <div className="row" style={{ marginTop: 12 }}>
                 {['Given', 'Missed', 'Held', 'Refused'].map(s => (
-                  <button key={s} className="btn btn-ghost btn-sm" onClick={() => recordAdmin(o.id, s)}>{s}</button>
+                  <button key={s} className="btn btn-ghost btn-sm" disabled={saving} onClick={() => recordAdmin(o.id, s)}>{saving ? '…' : s}</button>
                 ))}
               </div>
             </div>

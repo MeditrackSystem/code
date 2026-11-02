@@ -11,6 +11,7 @@ export default function Patients() {
   const [form, setForm] = useState({ patient_code: '', name: '', birth_date: '', room: '', bed: '', attending_physician: '', admission_status: 'Admitted' })
   const [show, setShow] = useState(false)
   const [msg, setMsg] = useState('')
+  const [saving, setSaving] = useState(false)
 
   async function load() {
     const { data } = await supabase.from('patients').select('*').order('id')
@@ -21,11 +22,16 @@ export default function Patients() {
   async function add(e) {
     if (e && e.preventDefault) e.preventDefault()
     setMsg('')
-    const { error } = await supabase.from('patients').insert(form)
-    if (error) { setMsg(error.message); return }
-    setShow(false)
-    setForm({ patient_code: '', name: '', birth_date: '', room: '', bed: '', attending_physician: '', admission_status: 'Admitted' })
-    load()
+    setSaving(true)
+    try {
+      const { error } = await supabase.from('patients').insert(form)
+      if (error) { setMsg(error.message); return }
+      setShow(false)
+      setForm({ patient_code: '', name: '', birth_date: '', room: '', bed: '', attending_physician: '', admission_status: 'Admitted' })
+      await load()
+    } finally {
+      setSaving(false)
+    }
   }
 
   const statuses = ['All', 'Admitted', 'Outpatient', 'Discharged']
@@ -102,7 +108,7 @@ export default function Patients() {
             </form>
             <div className="modal-foot">
               <button type="button" className="btn btn-ghost" onClick={() => setShow(false)}>Cancel</button>
-              <button type="submit" className="btn btn-success" onClick={add}>Save Patient</button>
+              <button type="submit" className="btn btn-success" onClick={add} disabled={saving}>{saving ? 'Saving…' : 'Save Patient'}</button>
             </div>
           </div>
         </div>
