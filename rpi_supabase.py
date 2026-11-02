@@ -24,7 +24,7 @@ if os.name == "posix":
     # Avoid GTK/GObject style warnings on Raspberry Pi
     os.environ.setdefault("QT_STYLE_OVERRIDE", "Fusion")
 import traceback
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from PyQt5.QtCore import Qt, QThread, pyqtSignal, QEvent, QTimer
@@ -135,7 +135,7 @@ def log_scan(tag_id, user_id, reader_type, outcome):
         "tag_id": tag_id,
         "user_id": user_id,
         "reader_type": reader_type,
-        "scanned_at": datetime.now().isoformat(timespec="seconds"),
+        "scanned_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "outcome": outcome,
     })
     # resolve tag token from csv for supabase
@@ -150,7 +150,7 @@ def log_scan(tag_id, user_id, reader_type, outcome):
         else:
             sb_insert("scan_logs", {
                 "reader_type": reader_type,
-                "scanned_at": datetime.now().isoformat(timespec="seconds"),
+                "scanned_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
                 "outcome": outcome,
             })
     except Exception as e:
@@ -164,7 +164,7 @@ def log_audit(user_id, action, record_type, record_id):
         "action": action,
         "record_type": record_type,
         "record_id": record_id,
-        "occurred_at": datetime.now().isoformat(timespec="seconds"),
+        "occurred_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
     })
     # sync to supabase
     sb_insert("audit_logs", {
@@ -172,7 +172,7 @@ def log_audit(user_id, action, record_type, record_id):
         "action": action,
         "record_type": record_type,
         "record_id": str(record_id),
-        "occurred_at": datetime.now().isoformat(timespec="seconds"),
+        "occurred_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
     })
 
 
@@ -376,7 +376,7 @@ def sb_log_scan(tag_token, user_id, reader_type, outcome):
             "tag_id": tid,
             "user_id": int(user_id) if str(user_id).isdigit() else None,
             "reader_type": reader_type,
-            "scanned_at": datetime.now().isoformat(timespec="seconds"),
+            "scanned_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
             "outcome": outcome,
         })
     except Exception as e:
@@ -386,7 +386,7 @@ def sb_log_scan(tag_token, user_id, reader_type, outcome):
 def save_uid(uid):
     try:
         with open(LOG_DIR / "uids.log", "a", encoding="utf-8") as f:
-            f.write(f"{datetime.now().isoformat()}  {uid}\n")
+            f.write(f"{datetime.now(timezone.utc).isoformat()}  {uid}\n")
     except Exception as e:
         print("log write failed:", e)
 
@@ -1124,7 +1124,7 @@ class MediTrackWindow(QMainWindow):
             "bed": p["bed"],
             "physician": p["attending_physician"],
             "user_id": self.current_user_id(),
-            "scanned_at": datetime.now().isoformat(timespec="seconds"),
+            "scanned_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         }
         try:
             r = requests.post(f"{SERVER_URL}/api/scan", json=payload, timeout=5)
@@ -1133,7 +1133,7 @@ class MediTrackWindow(QMainWindow):
             self.log(f"POST failed: {e}")
 
     def log(self, msg):
-        line = f"[{datetime.now().strftime('%H:%M:%S')}] {msg}"
+        line = f"[{datetime.now(timezone.utc).strftime('%H:%M:%S')}] {msg}"
         print(line)
 
     def _process_wedge_buffer(self):
