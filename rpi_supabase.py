@@ -48,7 +48,7 @@ SERVER_URL = os.environ.get("MEDITRACK_SERVER", "").rstrip("/")
 # Supabase
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://kjadezwzwvfualbvjrkm.supabase.co").rstrip("/")
 SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY") or os.environ.get("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtqYWRlend6d3ZmdWFsYnZqcmttIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MzIyODkxMywiZXhwIjoyMTA4ODA0OTEzfQ.fXMvycUvTp9-TTuPPUnmrVFcI8kzuVrdoVJOQaX6ffA")
-SYNC_INTERVAL = int(os.environ.get("SUPABASE_SYNC_INTERVAL", "60"))
+SYNC_INTERVAL = int(os.environ.get("SUPABASE_SYNC_INTERVAL", "10"))
 
 LOG_DIR.mkdir(exist_ok=True)
 DB_DIR.mkdir(exist_ok=True)
@@ -535,7 +535,7 @@ class MediTrackWindow(QMainWindow):
         self._current_uid = None
         self._current_reader_type = None
         self._refresh_timer = QTimer(self)
-        self._refresh_timer.setInterval(30000)
+        self._refresh_timer.setInterval(10000)
         self._refresh_timer.timeout.connect(self._refresh_current)
         self._refresh_timer.start()
 
@@ -1082,16 +1082,12 @@ if __name__ == "__main__":
             pull_supabase_to_csv()
         except Exception as e:
             print("initial pull failed:", e)
-        cycles = 0
         while True:
             try:
                 threading.Event().wait(SYNC_INTERVAL)
                 sync_csv_to_supabase()
-                # Pull remote (website) changes periodically so the Pi picks them up
-                # with a short delay, without continuous database traffic.
-                cycles += 1
-                if cycles % 5 == 0:
-                    pull_supabase_to_csv()
+                # Pull remote (website) changes frequently so the Pi stays in sync.
+                pull_supabase_to_csv()
             except Exception as e:
                 print("sync loop error:", e)
 
