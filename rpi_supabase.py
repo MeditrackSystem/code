@@ -441,23 +441,25 @@ class VirtualKeyboard(QWidget):
     def __init__(self, parent=None, submit=None):
         super().__init__(parent)
         self.submit = submit
-        grid = QGridLayout(self)
-        grid.setSpacing(3)
-        grid.setContentsMargins(4, 4, 4, 4)
-        grid.setAlignment(Qt.AlignCenter)
+        outer = QVBoxLayout(self)
+        outer.setSpacing(6)
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.setAlignment(Qt.AlignCenter)
+
         rows = [
             list("1234567890"),
             list("qwertyuiop"),
             list("asdfghjkl"),
             list("zxcvbnm") + ["Backspace"],
         ]
-        r = 0
         for row in rows:
-            c = 0
+            hbox = QHBoxLayout()
+            hbox.setSpacing(4)
+            hbox.setAlignment(Qt.AlignCenter)
             for ch in row:
                 if ch == "Backspace":
                     btn = QPushButton("Backspace")
-                    btn.setFixedSize(88, 34)
+                    btn.setFixedSize(96, 44)
                     btn.setFocusPolicy(Qt.NoFocus)
                     btn.clicked.connect(self._backspace)
                 else:
@@ -465,20 +467,24 @@ class VirtualKeyboard(QWidget):
                     btn.setFixedSize(44, 44)
                     btn.setFocusPolicy(Qt.NoFocus)
                     btn.clicked.connect(lambda checked, x=ch: self._press(x))
-                grid.addWidget(btn, r, c)
-                c += 1
-            r += 1
-        # space + backspace + enter
+                hbox.addWidget(btn)
+            outer.addLayout(hbox)
+
+        # space + enter row
+        bottom = QHBoxLayout()
+        bottom.setSpacing(4)
+        bottom.setAlignment(Qt.AlignCenter)
         space = QPushButton("Space")
-        space.setFixedHeight(44)
+        space.setFixedSize(220, 44)
         space.setFocusPolicy(Qt.NoFocus)
         space.clicked.connect(lambda: self._press(" "))
-        grid.addWidget(space, r, 0, 1, 6)
+        bottom.addWidget(space)
         enter = QPushButton("Enter")
-        enter.setFixedHeight(44)
+        enter.setFixedSize(120, 44)
         enter.setFocusPolicy(Qt.NoFocus)
         enter.clicked.connect(self._enter)
-        grid.addWidget(enter, r, 6, 1, 5)
+        bottom.addWidget(enter)
+        outer.addLayout(bottom)
 
     def _press(self, ch):
         w = QApplication.focusWidget()
