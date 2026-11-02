@@ -1166,14 +1166,16 @@ if __name__ == "__main__":
     import sys
     def _sync_loop():
         # initial sync in background so the UI appears immediately
-        try:
-            pull_supabase_to_csv()
-        except Exception as e:
-            print("initial pull failed:", e)
+        # Push local changes first, then pull remote changes, so we never
+        # overwrite unsynced local edits.
         try:
             sync_csv_to_supabase()
         except Exception as e:
             print("initial sync failed:", e)
+        try:
+            pull_supabase_to_csv()
+        except Exception as e:
+            print("initial pull failed:", e)
         while True:
             try:
                 threading.Event().wait(SYNC_INTERVAL)
