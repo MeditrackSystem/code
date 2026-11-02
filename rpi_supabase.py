@@ -449,35 +449,36 @@ class VirtualKeyboard(QWidget):
             list("1234567890"),
             list("qwertyuiop"),
             list("asdfghjkl"),
-            list("zxcvbnm"),
+            list("zxcvbnm") + ["Backspace"],
         ]
         r = 0
         for row in rows:
             c = 0
             for ch in row:
-                btn = QPushButton(ch)
-                btn.setFixedSize(34, 34)
-                btn.setFocusPolicy(Qt.NoFocus)
-                btn.clicked.connect(lambda checked, x=ch: self._press(x))
+                if ch == "Backspace":
+                    btn = QPushButton("Backspace")
+                    btn.setFixedSize(88, 34)
+                    btn.setFocusPolicy(Qt.NoFocus)
+                    btn.clicked.connect(self._backspace)
+                else:
+                    btn = QPushButton(ch)
+                    btn.setFixedSize(44, 44)
+                    btn.setFocusPolicy(Qt.NoFocus)
+                    btn.clicked.connect(lambda checked, x=ch: self._press(x))
                 grid.addWidget(btn, r, c)
                 c += 1
             r += 1
         # space + backspace + enter
         space = QPushButton("Space")
-        space.setFixedHeight(34)
+        space.setFixedHeight(44)
         space.setFocusPolicy(Qt.NoFocus)
         space.clicked.connect(lambda: self._press(" "))
-        grid.addWidget(space, r, 0, 1, 5)
-        back = QPushButton("Backspace")
-        back.setFixedHeight(34)
-        back.setFocusPolicy(Qt.NoFocus)
-        back.clicked.connect(self._backspace)
-        grid.addWidget(back, r, 5, 1, 3)
+        grid.addWidget(space, r, 0, 1, 6)
         enter = QPushButton("Enter")
-        enter.setFixedHeight(34)
+        enter.setFixedHeight(44)
         enter.setFocusPolicy(Qt.NoFocus)
         enter.clicked.connect(self._enter)
-        grid.addWidget(enter, r, 8, 1, 3)
+        grid.addWidget(enter, r, 6, 1, 5)
 
     def _press(self, ch):
         w = QApplication.focusWidget()
@@ -519,7 +520,7 @@ class LoginDialog(QDialog):
         self.setStyleSheet("QDialog { background: #F4F7FB; }")
 
         card = QFrame()
-        card.setFixedWidth(920)
+        card.setFixedWidth(1120)
         card.setStyleSheet("""
             QFrame {
                 background: white;
