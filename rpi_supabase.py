@@ -220,7 +220,7 @@ def sync_csv_to_supabase():
     # the Pi can overwrite website edits (e.g. medication administration status),
     # so we intentionally do NOT push them here.
     # Scan/audit logs are pushed individually when they happen.
-    print("Supabase sync pass done.")
+    pass  # keep quiet during periodic sync
 
 
 def pull_supabase_to_csv():
@@ -248,7 +248,7 @@ def pull_supabase_to_csv():
                 w.writerow(cols)
                 for row in rows:
                     w.writerow([("" if row.get(c) is None else row.get(c, "")) for c in cols])
-            print(f"pulled {len(rows)} {table}")
+            pass  # keep quiet during periodic sync
         except Exception as e:
             print("pull", table, "error:", e)
 
