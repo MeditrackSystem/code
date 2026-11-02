@@ -33,7 +33,7 @@ from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton, QComboBox, QLineEdit, QTextEdit, QFrame,
     QScrollArea, QMessageBox, QDialog, QDialogButtonBox, QFormLayout,
-    QCheckBox, QStackedWidget, QGraphicsDropShadowEffect
+    QGridLayout, QCheckBox, QStackedWidget, QGraphicsDropShadowEffect
 )
 
 BASE_DIR = Path(__file__).resolve().parent
