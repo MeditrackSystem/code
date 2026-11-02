@@ -18,21 +18,27 @@ export default function PatientDetail() {
   const [recForm, setRecForm] = useState({ record_type: 'Note', note: '' })
   const [msg, setMsg] = useState('')
   const [saving, setSaving] = useState(false)
+  const [loading, setLoading] = useState(true)
 
   async function load() {
-    const { data: p } = await supabase.from('patients').select('*').eq('id', id).single()
-    setPatient(p)
-    const { data: t } = await supabase.from('rfid_tags').select('*').eq('patient_id', id)
-    setTags(t || [])
-    const { data: o } = await supabase.from('medication_orders').select('*').eq('patient_id', id)
-    setOrders(o || [])
-    const { data: r } = await supabase.from('medical_records').select('*').eq('patient_id', id).order('recorded_at', { ascending: false })
-    setRecords(r || [])
-    const ids = (o || []).map(x => x.id)
-    if (ids.length) {
-      const { data: a } = await supabase.from('medication_administrations').select('*').in('order_id', ids)
-      setAdmins(a || [])
-    } else setAdmins([])
+    setLoading(true)
+    try {
+      const { data: p } = await supabase.from('patients').select('*').eq('id', id).single()
+      setPatient(p)
+      const { data: t } = await supabase.from('rfid_tags').select('*').eq('patient_id', id)
+      setTags(t || [])
+      const { data: o } = await supabase.from('medication_orders').select('*').eq('patient_id', id)
+      setOrders(o || [])
+      const { data: r } = await supabase.from('medical_records').select('*').eq('patient_id', id).order('recorded_at', { ascending: false })
+      setRecords(r || [])
+      const ids = (o || []).map(x => x.id)
+      if (ids.length) {
+        const { data: a } = await supabase.from('medication_administrations').select('*').in('order_id', ids)
+        setAdmins(a || [])
+      } else setAdmins([])
+    } finally {
+      setLoading(false)
+    }
   }
   useEffect(() => { load() }, [id])
 
@@ -238,6 +244,15 @@ export default function PatientDetail() {
           ))}
         </div>
       </div>
+    {(loading || saving) && (
+      <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+        <div style={{ background: 'white', padding: '24px 32px', borderRadius: 12, boxShadow: '0 10px 30px rgba(0,0,0,0.2)', textAlign: 'center' }}>
+          <div style={{ width: 36, height: 36, border: '4px solid #e2e8f0', borderTopColor: '#2563eb', borderRadius: '50%', margin: '0 auto 12px', animation: 'spin 0.8s linear infinite' }} />
+          <div style={{ fontWeight: 600, color: '#1e293b' }}>{saving ? 'Saving…' : 'Loading…'}</div>
+        </div>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    )}
     </div>
   )
 }

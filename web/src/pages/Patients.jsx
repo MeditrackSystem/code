@@ -12,10 +12,16 @@ export default function Patients() {
   const [show, setShow] = useState(false)
   const [msg, setMsg] = useState('')
   const [saving, setSaving] = useState(false)
+  const [loading, setLoading] = useState(true)
 
   async function load() {
-    const { data } = await supabase.from('patients').select('*').order('id')
-    setPatients(data || [])
+    setLoading(true)
+    try {
+      const { data } = await supabase.from('patients').select('*').order('id')
+      setPatients(data || [])
+    } finally {
+      setLoading(false)
+    }
   }
   useEffect(() => { load() }, [])
 
@@ -165,6 +171,15 @@ export default function Patients() {
           </table>
         </div>
       </div>
+    {(loading || saving) && (
+      <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+        <div style={{ background: 'white', padding: '24px 32px', borderRadius: 12, boxShadow: '0 10px 30px rgba(0,0,0,0.2)', textAlign: 'center' }}>
+          <div style={{ width: 36, height: 36, border: '4px solid #e2e8f0', borderTopColor: '#2563eb', borderRadius: '50%', margin: '0 auto 12px', animation: 'spin 0.8s linear infinite' }} />
+          <div style={{ fontWeight: 600, color: '#1e293b' }}>{saving ? 'Saving…' : 'Loading…'}</div>
+        </div>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    )}
     </div>
   )
 }
