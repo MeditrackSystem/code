@@ -27,7 +27,7 @@ export default function AuditLogs() {
   useEffect(() => {
     async function load() {
       const [logs, userRows] = await Promise.all([
-        supabase.from('audit_logs').select('*').order('occurred_at', { ascending: false }).limit(1000),
+        supabase.from('audit_logs').select('*').order('occurred_at', { ascending: false }).limit(100),
         supabase.from('users').select('id, name, role'),
       ])
       setRows(logs.data || [])
