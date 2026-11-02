@@ -4,5 +4,5 @@ id,employee_id,name,username,password,role,status
 3,U003,Dr. John Lee,john.lee,password,Doctor,Active
 4,U004,Nurse Joy Reyes,nurse.joy,password,Nurse,Active
 5,U005,Nurse Anna Cruz,anna.cruz,password,Nurse,Active
+7,U007,Read-Only Staff,staff.readonly,password,Read-only staff,Inactive
 6,U006,Pharmacist Leo Tan,leo.tan,password,Pharmacist,Active
-7,U007,Read-Only Staff,staff.readonly,password,Read-only staff,Active

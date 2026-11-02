@@ -1,4 +1,10 @@
 id,patient_id,medication,dose,route,frequency,prescriber_id,status
+11,3,Paracetamol,500mg,Oral,Every 8 hours,,Active
+12,3,Amoxicillin,500mg,Oral,Every 12 hours,,Active
+13,4,Paracetamol,500mg,Oral,Every 8 hours,,Active
+14,4,Amoxicillin,500mg,Oral,Every 12 hours,,Active
+15,5,Paracetamol,500mg,Oral,Every 8 hours,,Active
+16,5,Amoxicillin,500mg,Oral,Every 12 hours,,Active
 1,1,Medication A,500 mg,Oral,Once daily at 08:00,2,Active
 2,1,Medication B,250 mg,Oral,Once daily at 14:00,2,Active
 3,2,Metformin,500 mg,Oral,Twice daily,3,Active

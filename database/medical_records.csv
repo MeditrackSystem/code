@@ -1,8 +1,20 @@
 id,patient_id,clinician_id,record_type,note,recorded_at
-1,1,2,Diagnosis,Hypertension; on maintenance medication.,2026-10-31T09:00:00
-2,1,2,Allergy,No known drug allergies (NKDA).,2026-10-31T09:05:00
-3,2,3,Diagnosis,Type 2 Diabetes Mellitus.,2026-10-31T09:10:00
-4,2,3,Allergy,Penicillin allergy.,2026-10-31T09:12:00
-5,3,2,Diagnosis,"Asthma, controlled.",2026-10-31T09:15:00
-6,4,3,Diagnosis,Routine check-up; no acute issues.,2026-10-31T09:20:00
-7,5,2,Diagnosis,Post-operative recovery monitoring.,2026-10-31T09:25:00
+14,1,,Diagnosis,Community-acquired pneumonia. Started on antibiotics; monitor temperature every 4 hours.,2026-11-01T05:30:34.807+00:00
+15,1,,Note,Patient reports reduced pain after morning dose. Ambulating without assistance.,2026-10-31T15:30:34.808+00:00
+16,2,,Note,Patient reports reduced pain after morning dose. Ambulating without assistance.,2026-11-01T02:30:34.808+00:00
+17,2,,Allergy,Penicillin — mild rash. Avoid beta-lactam antibiotics.,2026-10-31T12:30:34.808+00:00
+18,2,,History,Hypertension managed with lifestyle changes. No previous surgeries.,2026-10-30T22:30:34.808+00:00
+19,3,,Allergy,Penicillin — mild rash. Avoid beta-lactam antibiotics.,2026-10-31T23:30:34.808+00:00
+20,3,,History,Hypertension managed with lifestyle changes. No previous surgeries.,2026-10-31T09:30:34.808+00:00
+21,4,,History,Hypertension managed with lifestyle changes. No previous surgeries.,2026-10-31T20:30:34.808+00:00
+22,4,,Diagnosis,Community-acquired pneumonia. Started on antibiotics; monitor temperature every 4 hours.,2026-10-31T06:30:34.808+00:00
+23,4,,Note,Patient reports reduced pain after morning dose. Ambulating without assistance.,2026-10-30T16:30:34.808+00:00
+24,5,,Diagnosis,Community-acquired pneumonia. Started on antibiotics; monitor temperature every 4 hours.,2026-10-31T17:30:34.808+00:00
+25,5,,Note,Patient reports reduced pain after morning dose. Ambulating without assistance.,2026-10-31T03:30:34.808+00:00
+1,1,2,Diagnosis,Hypertension; on maintenance medication.,2026-10-31T09:00:00+00:00
+2,1,2,Allergy,No known drug allergies (NKDA).,2026-10-31T09:05:00+00:00
+3,2,3,Diagnosis,Type 2 Diabetes Mellitus.,2026-10-31T09:10:00+00:00
+4,2,3,Allergy,Penicillin allergy.,2026-10-31T09:12:00+00:00
+5,3,2,Diagnosis,"Asthma, controlled.",2026-10-31T09:15:00+00:00
+6,4,3,Diagnosis,Routine check-up; no acute issues.,2026-10-31T09:20:00+00:00
+7,5,2,Diagnosis,Post-operative recovery monitoring.,2026-10-31T09:25:00+00:00

@@ -334,6 +334,36 @@ def sync_csv_to_supabase():
     print("Supabase sync pass done.")
 
 
+def pull_supabase_to_csv():
+    """Best-effort: refresh local CSV cache from Supabase so IDs and data match."""
+    if not HAS_REQUESTS:
+        return
+    headers = {"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"}
+    tables = {
+        "users": (DB_DIR / "users.csv", ["id", "employee_id", "name", "username", "password", "role", "status"]),
+        "patients": (DB_DIR / "patients.csv", ["id", "patient_code", "name", "birth_date", "room", "bed", "attending_physician", "admission_status"]),
+        "rfid_tags": (DB_DIR / "rfid_tags.csv", ["id", "tag_token", "patient_id", "status", "assigned_at", "deactivated_at"]),
+        "medication_orders": (DB_DIR / "medication_orders.csv", ["id", "patient_id", "medication", "dose", "route", "frequency", "prescriber_id", "status"]),
+        "medication_administrations": (DB_DIR / "medication_administrations.csv", ["id", "order_id", "scheduled_at", "administered_at", "status", "administered_by", "notes"]),
+        "medical_records": (DB_DIR / "medical_records.csv", ["id", "patient_id", "clinician_id", "record_type", "note", "recorded_at"]),
+    }
+    for table, (path, cols) in tables.items():
+        try:
+            r = requests.get(f"{SUPABASE_URL}/rest/v1/{table}?select={','.join(cols)}", headers=headers, timeout=15)
+            if not r.ok:
+                print("pull", table, "failed:", r.status_code, r.text[:200])
+                continue
+            rows = r.json() or []
+            with open(path, "w", newline="", encoding="utf-8") as f:
+                w = csv.writer(f)
+                w.writerow(cols)
+                for row in rows:
+                    w.writerow([("" if row.get(c) is None else row.get(c, "")) for c in cols])
+            print(f"pulled {len(rows)} {table}")
+        except Exception as e:
+            print("pull", table, "error:", e)
+
+
 def sb_log_scan(tag_token, user_id, reader_type, outcome):
     # resolve tag id
     try:
@@ -1132,7 +1162,11 @@ class MediTrackWindow(QMainWindow):
 # --------------------------- Main entry ---------------------------
 if __name__ == "__main__":
     import sys
-    # initial sync
+    # initial pull (Supabase -> CSV) then push (CSV -> Supabase)
+    try:
+        pull_supabase_to_csv()
+    except Exception as e:
+        print("initial pull failed:", e)
     try:
         sync_csv_to_supabase()
     except Exception as e:
@@ -1143,6 +1177,7 @@ if __name__ == "__main__":
             try:
                 threading.Event().wait(SYNC_INTERVAL)
                 sync_csv_to_supabase()
+                pull_supabase_to_csv()
             except Exception as e:
                 print("sync loop error:", e)
 
