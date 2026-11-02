@@ -292,6 +292,17 @@ def card_frame():
     return frame
 
 
+def fmt_dt(value):
+    if not value:
+        return "-"
+    try:
+        txt = str(value).replace("Z", "+00:00")
+        dt = datetime.fromisoformat(txt)
+        return dt.astimezone().strftime("%Y-%m-%d %H:%M")
+    except Exception:
+        return str(value)
+
+
 # --------------------------- Toggle switch ---------------------------
 class ToggleSwitch(QCheckBox):
     def __init__(self, parent=None):
@@ -431,7 +442,9 @@ class VirtualKeyboard(QWidget):
         super().__init__(parent)
         self.submit = submit
         grid = QGridLayout(self)
-        grid.setSpacing(4)
+        grid.setSpacing(3)
+        grid.setContentsMargins(4, 4, 4, 4)
+        grid.setAlignment(Qt.AlignCenter)
         rows = [
             list("1234567890"),
             list("qwertyuiop"),
@@ -443,7 +456,7 @@ class VirtualKeyboard(QWidget):
             c = 0
             for ch in row:
                 btn = QPushButton(ch)
-                btn.setFixedSize(40, 40)
+                btn.setFixedSize(34, 34)
                 btn.setFocusPolicy(Qt.NoFocus)
                 btn.clicked.connect(lambda checked, x=ch: self._press(x))
                 grid.addWidget(btn, r, c)
@@ -451,17 +464,17 @@ class VirtualKeyboard(QWidget):
             r += 1
         # space + backspace + enter
         space = QPushButton("Space")
-        space.setFixedHeight(40)
+        space.setFixedHeight(34)
         space.setFocusPolicy(Qt.NoFocus)
         space.clicked.connect(lambda: self._press(" "))
         grid.addWidget(space, r, 0, 1, 5)
         back = QPushButton("Backspace")
-        back.setFixedHeight(40)
+        back.setFixedHeight(34)
         back.setFocusPolicy(Qt.NoFocus)
         back.clicked.connect(self._backspace)
         grid.addWidget(back, r, 5, 1, 3)
         enter = QPushButton("Enter")
-        enter.setFixedHeight(40)
+        enter.setFixedHeight(34)
         enter.setFocusPolicy(Qt.NoFocus)
         enter.clicked.connect(self._enter)
         grid.addWidget(enter, r, 8, 1, 3)
@@ -645,7 +658,7 @@ class MediTrackWindow(QMainWindow):
             border-radius: 10px; padding: 8px; font-size: 16px;
         }
         QFrame#card {
-            background: white; border: 1px solid #E2E8F0;
+            background: white; border: none;
             border-radius: 14px;
         }
         QScrollArea { border: none; background: transparent; }
@@ -998,10 +1011,10 @@ class MediTrackWindow(QMainWindow):
             return
         for order, admin in meds:
             status = admin["status"] if admin else "Pending"
-            admin_time = admin["administered_at"] if admin and admin["administered_at"] else "-"
+            admin_time = fmt_dt(admin["administered_at"]) if admin and admin["administered_at"] else "-"
             color = {"Given": "#16A34A", "Pending": "#F59E0B", "Missed": "#DC2626", "Held": "#F59E0B", "Refused": "#DC2626"}.get(status, "#64748B")
             card = QFrame()
-            card.setStyleSheet("background:#F8FAFC; border:1px solid #E2E8F0; border-radius:10px; padding:8px;")
+            card.setStyleSheet("background:#F8FAFC; border:none; border-radius:10px; padding:8px;")
             cl = QVBoxLayout(card)
             cl.setSpacing(4)
             name = QLabel(order["medication"])
@@ -1029,14 +1042,14 @@ class MediTrackWindow(QMainWindow):
         for r in records:
             rtype = r.get("record_type", "Note")
             card = QFrame()
-            card.setStyleSheet("background:#F8FAFC; border:1px solid #E2E8F0; border-radius:10px; padding:8px;")
+            card.setStyleSheet("background:#F8FAFC; border:none; border-radius:10px; padding:8px;")
             cl = QVBoxLayout(card)
             cl.setSpacing(4)
             title = QLabel(rtype)
             title.setStyleSheet("font-weight:700; font-size:16px; color:#2563EB;")
             cl.addWidget(title)
             cl.addWidget(QLabel(r.get("note", "")))
-            cl.addWidget(QLabel(f"Date: {r.get('recorded_at', '')}"))
+            cl.addWidget(QLabel(f"Date: {fmt_dt(r.get('recorded_at', ''))}"))
             self.records_layout.addWidget(card)
         self.records_layout.addStretch(1)
 
