@@ -138,6 +138,7 @@ def log_scan(tag_id, user_id, reader_type, outcome):
         "scanned_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "outcome": outcome,
     })
+    print(f"[scan] tag={tag_id} user={user_id} reader={reader_type} outcome={outcome}")
     # resolve tag token from csv for supabase
     try:
         tag_token = None
@@ -166,6 +167,7 @@ def log_audit(user_id, action, record_type, record_id):
         "record_id": record_id,
         "occurred_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
     })
+    print(f"[audit] user={user_id} action={action} {record_type}={record_id}")
     # sync to supabase
     sb_insert("audit_logs", {
         "user_id": int(user_id) if str(user_id).isdigit() else None,
