@@ -1162,17 +1162,16 @@ class MediTrackWindow(QMainWindow):
 # --------------------------- Main entry ---------------------------
 if __name__ == "__main__":
     import sys
-    # initial pull (Supabase -> CSV) then push (CSV -> Supabase)
-    try:
-        pull_supabase_to_csv()
-    except Exception as e:
-        print("initial pull failed:", e)
-    try:
-        sync_csv_to_supabase()
-    except Exception as e:
-        print("initial sync failed:", e)
-
     def _sync_loop():
+        # initial sync in background so the UI appears immediately
+        try:
+            pull_supabase_to_csv()
+        except Exception as e:
+            print("initial pull failed:", e)
+        try:
+            sync_csv_to_supabase()
+        except Exception as e:
+            print("initial sync failed:", e)
         while True:
             try:
                 threading.Event().wait(SYNC_INTERVAL)
