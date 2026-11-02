@@ -720,6 +720,11 @@ class MediTrackWindow(QMainWindow):
         self.current_user_label.setStyleSheet("font-size:16px; font-weight:600; color:#1E293B;")
         tb.addWidget(self.current_user_label)
 
+        scan_again_top = QPushButton("Scan Again")
+        scan_again_top.setObjectName("secondary")
+        scan_again_top.clicked.connect(self.back_to_front)
+        tb.addWidget(scan_again_top)
+
         logout_btn = QPushButton("Logout")
         logout_btn.setObjectName("secondary")
         logout_btn.clicked.connect(self.close)
