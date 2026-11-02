@@ -532,6 +532,13 @@ class MediTrackWindow(QMainWindow):
         self._wedge_timer.setInterval(250)
         self._wedge_timer.timeout.connect(self._process_wedge_buffer)
 
+        self._current_uid = None
+        self._current_reader_type = None
+        self._refresh_timer = QTimer(self)
+        self._refresh_timer.setInterval(30000)
+        self._refresh_timer.timeout.connect(self._refresh_current)
+        self._refresh_timer.start()
+
         self._build_ui()
         self._set_photo(None)
 
@@ -850,6 +857,8 @@ class MediTrackWindow(QMainWindow):
             log_scan("", user_id, reader_type, "Unknown tag")
             return
 
+        self._current_uid = uid
+        self._current_reader_type = reader_type
         self._display_bundle(bundle, reader_type, uid)
         self.stack.setCurrentIndex(1)
 
@@ -961,6 +970,8 @@ class MediTrackWindow(QMainWindow):
         self.records_layout.addStretch(1)
 
     def back_to_front(self):
+        self._current_uid = None
+        self._current_reader_type = None
         self.name_label.setText("No patient loaded")
         for v in self.detail_labels.values():
             v.setText("-")
@@ -972,6 +983,13 @@ class MediTrackWindow(QMainWindow):
         self.rfid_status_indicator.setText("● Waiting for scan")
         self.rfid_status_indicator.setStyleSheet("color:#64748B; font-weight:600; font-size:14px;")
         self.stack.setCurrentIndex(0)
+
+    def _refresh_current(self):
+        if not self._current_uid:
+            return
+        bundle, msg = get_bundle(self._current_uid)
+        if bundle is not None:
+            self._display_bundle(bundle, self._current_reader_type, None)
 
     def _set_photo(self, patient_id):
         if patient_id is None:
