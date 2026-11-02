@@ -1179,8 +1179,9 @@ if __name__ == "__main__":
         while True:
             try:
                 threading.Event().wait(SYNC_INTERVAL)
+                # Only push local changes periodically; pulling happens on startup
+                # (and on demand) to avoid continuous database traffic.
                 sync_csv_to_supabase()
-                pull_supabase_to_csv()
             except Exception as e:
                 print("sync loop error:", e)
 
