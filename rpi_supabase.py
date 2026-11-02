@@ -47,7 +47,7 @@ SERVER_URL = os.environ.get("MEDITRACK_SERVER", "").rstrip("/")
 
 # Supabase
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://kjadezwzwvfualbvjrkm.supabase.co").rstrip("/")
-SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY") or os.environ.get("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtqYWRlend6d3ZmdWFsYnZqcmttIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMyMjg5MTMsImV4cCI6MjEwODgwNDkxM30.se5DLVq4qT6M25KvprXRIkqj_Zvjm3Gp7oGoo3MtFWk")
+SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY") or os.environ.get("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtqYWRlend6d3ZmdWFsYnZqcmttIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MzIyODkxMywiZXhwIjoyMTA4ODA0OTEzfQ.fXMvycUvTp9-TTuPPUnmrVFcI8kzuVrdoVJOQaX6ffA")
 SYNC_INTERVAL = int(os.environ.get("SUPABASE_SYNC_INTERVAL", "60"))
 
 LOG_DIR.mkdir(exist_ok=True)
