@@ -140,22 +140,24 @@ def log_scan(tag_id, user_id, reader_type, outcome):
     })
     print(f"[scan] tag={tag_id} user={user_id} reader={reader_type} outcome={outcome}")
     # resolve tag token from csv for supabase
-    try:
-        tag_token = None
-        for t in read_csv("rfid_tags"):
-            if str(t.get("id")) == str(tag_id):
-                tag_token = t.get("tag_token")
-                break
-        if tag_token:
-            sb_log_scan(tag_token, user_id, reader_type, outcome)
-        else:
-            sb_insert("scan_logs", {
-                "reader_type": reader_type,
-                "scanned_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-                "outcome": outcome,
-            })
-    except Exception as e:
-        print("log_scan sync failed:", e)
+    def _push():
+        try:
+            tag_token = None
+            for t in read_csv("rfid_tags"):
+                if str(t.get("id")) == str(tag_id):
+                    tag_token = t.get("tag_token")
+                    break
+            if tag_token:
+                sb_log_scan(tag_token, user_id, reader_type, outcome)
+            else:
+                sb_insert("scan_logs", {
+                    "reader_type": reader_type,
+                    "scanned_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                    "outcome": outcome,
+                })
+        except Exception as e:
+            print("log_scan sync failed:", e)
+    threading.Thread(target=_push, daemon=True).start()
 
 
 def log_audit(user_id, action, record_type, record_id):
@@ -168,14 +170,16 @@ def log_audit(user_id, action, record_type, record_id):
         "occurred_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
     })
     print(f"[audit] user={user_id} action={action} {record_type}={record_id}")
-    # sync to supabase
-    sb_insert("audit_logs", {
-        "user_id": int(user_id) if str(user_id).isdigit() else None,
-        "action": action,
-        "record_type": record_type,
-        "record_id": str(record_id),
-        "occurred_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-    })
+    # sync to supabase (background to avoid UI delay)
+    def _push():
+        sb_insert("audit_logs", {
+            "user_id": int(user_id) if str(user_id).isdigit() else None,
+            "action": action,
+            "record_type": record_type,
+            "record_id": str(record_id),
+            "occurred_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        })
+    threading.Thread(target=_push, daemon=True).start()
 
 
 # --------------------------- Supabase sync helpers ---------------------------
