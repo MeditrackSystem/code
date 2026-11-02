@@ -48,7 +48,7 @@ SERVER_URL = os.environ.get("MEDITRACK_SERVER", "").rstrip("/")
 # Supabase
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://kjadezwzwvfualbvjrkm.supabase.co").rstrip("/")
 SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY") or os.environ.get("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtqYWRlend6d3ZmdWFsYnZqcmttIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MzIyODkxMywiZXhwIjoyMTA4ODA0OTEzfQ.fXMvycUvTp9-TTuPPUnmrVFcI8kzuVrdoVJOQaX6ffA")
-SYNC_INTERVAL = int(os.environ.get("SUPABASE_SYNC_INTERVAL", "10"))
+SYNC_INTERVAL = int(os.environ.get("SUPABASE_SYNC_INTERVAL", "30"))
 
 LOG_DIR.mkdir(exist_ok=True)
 DB_DIR.mkdir(exist_ok=True)
@@ -535,7 +535,7 @@ class MediTrackWindow(QMainWindow):
         self._current_uid = None
         self._current_reader_type = None
         self._refresh_timer = QTimer(self)
-        self._refresh_timer.setInterval(10000)
+        self._refresh_timer.setInterval(30000)
         self._refresh_timer.timeout.connect(self._refresh_current)
         self._refresh_timer.start()
 

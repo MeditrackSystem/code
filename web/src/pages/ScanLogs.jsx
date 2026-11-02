@@ -18,7 +18,7 @@ export default function ScanLogs() {
 
   async function load() {
     const [logs, tagRows, userRows] = await Promise.all([
-      supabase.from('scan_logs').select('*').order('scanned_at', { ascending: false }).limit(300),
+      supabase.from('scan_logs').select('*').order('scanned_at', { ascending: false }).limit(1000),
       supabase.from('rfid_tags').select('id, tag_token'),
       supabase.from('users').select('id, name'),
     ])
