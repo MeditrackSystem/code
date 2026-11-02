@@ -879,8 +879,10 @@ class MediTrackWindow(QMainWindow):
         result_scroll.setWidgetResizable(True)
         result_scroll.setWidget(result)
         result_scroll.setStyleSheet("border:none; background:transparent;")
-        result_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
-        QScroller.grabGesture(result_scroll, QScroller.TouchGesture)
+        result_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        result_scroll.verticalScrollBar().setStyleSheet("min-width: 18px;")
+        result_scroll.viewport().setAttribute(Qt.WA_AcceptTouchEvents, True)
+        QScroller.grabGesture(result_scroll.viewport(), QScroller.TouchGesture)
         self.stack.addWidget(result_scroll)
 
         outer.addWidget(main_wrapper)
