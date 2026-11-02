@@ -478,7 +478,9 @@ class LoginDialog(QDialog):
         self.username_input = QLineEdit()
         self.username_input.setPlaceholderText("Username")
         self.username_input.setMinimumHeight(48)
+        self.username_input.setFocusPolicy(Qt.StrongFocus)
         cl.addWidget(self.username_input)
+        self.username_input.setFocus()
 
         self.password_input = QLineEdit()
         self.password_input.setPlaceholderText("Password")
