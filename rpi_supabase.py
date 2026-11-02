@@ -425,6 +425,72 @@ class AutoBleWorker(QThread):
             QThread.msleep(100)
 
 
+# --------------------------- On-screen keyboard ---------------------------
+class VirtualKeyboard(QWidget):
+    def __init__(self, parent=None, submit=None):
+        super().__init__(parent)
+        self.submit = submit
+        grid = QGridLayout(self)
+        grid.setSpacing(4)
+        rows = [
+            list("1234567890"),
+            list("qwertyuiop"),
+            list("asdfghjkl"),
+            list("zxcvbnm"),
+        ]
+        r = 0
+        for row in rows:
+            c = 0
+            for ch in row:
+                btn = QPushButton(ch)
+                btn.setFixedSize(40, 40)
+                btn.setFocusPolicy(Qt.NoFocus)
+                btn.clicked.connect(lambda checked, x=ch: self._press(x))
+                grid.addWidget(btn, r, c)
+                c += 1
+            r += 1
+        # space + backspace + enter
+        space = QPushButton("Space")
+        space.setFixedHeight(40)
+        space.setFocusPolicy(Qt.NoFocus)
+        space.clicked.connect(lambda: self._press(" "))
+        grid.addWidget(space, r, 0, 1, 5)
+        back = QPushButton("Back")
+        back.setFixedHeight(40)
+        back.setFocusPolicy(Qt.NoFocus)
+        back.clicked.connect(self._backspace)
+        grid.addWidget(back, r, 5, 1, 3)
+        enter = QPushButton("Enter")
+        enter.setFixedHeight(40)
+        enter.setFocusPolicy(Qt.NoFocus)
+        enter.clicked.connect(self._enter)
+        grid.addWidget(enter, r, 8, 1, 3)
+
+    def _press(self, ch):
+        w = QApplication.focusWidget()
+        if isinstance(w, QLineEdit):
+            w.insert(ch)
+        elif isinstance(w, QTextEdit):
+            w.insertPlainText(ch)
+
+    def _backspace(self):
+        w = QApplication.focusWidget()
+        if isinstance(w, QLineEdit):
+            w.backspace()
+        elif isinstance(w, QTextEdit):
+            c = w.textCursor()
+            c.deletePreviousChar()
+            w.setTextCursor(c)
+
+    def _enter(self):
+        if callable(self.submit):
+            self.submit()
+        else:
+            w = QApplication.focusWidget()
+            if isinstance(w, QLineEdit):
+                w.parent().try_login() if hasattr(w.parent(), "try_login") else None
+
+
 # --------------------------- Login dialog ---------------------------
 class LoginDialog(QDialog):
     def __init__(self, parent=None):
@@ -497,6 +563,9 @@ class LoginDialog(QDialog):
         self.status.setStyleSheet("color:#DC2626; font-size:14px;")
         self.status.setAlignment(Qt.AlignCenter)
         cl.addWidget(self.status)
+
+        self.keyboard = VirtualKeyboard(self, submit=self.try_login)
+        cl.addWidget(self.keyboard)
 
         outer.addWidget(card, 0, Qt.AlignCenter)
 
