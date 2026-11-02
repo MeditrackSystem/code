@@ -455,7 +455,7 @@ class VirtualKeyboard(QWidget):
         space.setFocusPolicy(Qt.NoFocus)
         space.clicked.connect(lambda: self._press(" "))
         grid.addWidget(space, r, 0, 1, 5)
-        back = QPushButton("Back")
+        back = QPushButton("Backspace")
         back.setFixedHeight(40)
         back.setFocusPolicy(Qt.NoFocus)
         back.clicked.connect(self._backspace)
