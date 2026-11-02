@@ -826,29 +826,26 @@ class MediTrackWindow(QMainWindow):
         self.photo_label.hide()
 
         details = QVBoxLayout()
-        details.setSpacing(8)
+        details.setSpacing(10)
         self.name_label = QLabel("No patient loaded")
-        self.name_label.setStyleSheet("font-size:28px; font-weight:700; color:#142B4A;")
+        self.name_label.setStyleSheet("font-size:26px; font-weight:700; color:#142B4A;")
         details.addWidget(self.name_label)
 
+        grid = QGridLayout()
+        grid.setHorizontalSpacing(16)
+        grid.setVerticalSpacing(8)
         self.detail_labels = {}
-        for key, text in [
-            ("Patient ID", "-"),
-            ("Room / Bed", "-"),
-            ("Physician", "-"),
-            ("RFID status", "-"),
-            ("Birth date", "-"),
-        ]:
-            row = QHBoxLayout()
+        keys = ["Patient ID", "Room / Bed", "Physician", "RFID status", "Birth date"]
+        for i, key in enumerate(keys):
             k = QLabel(f"{key}:")
-            k.setStyleSheet("font-weight:600; color:#374151; font-size:16px;")
-            v = QLabel(text)
-            v.setStyleSheet("color:#1E293B; font-size:16px;")
+            k.setStyleSheet("font-weight:600; color:#374151; font-size:15px;")
+            v = QLabel("-")
+            v.setStyleSheet("color:#1E293B; font-size:15px;")
+            v.setWordWrap(True)
             self.detail_labels[key] = v
-            row.addWidget(k)
-            row.addWidget(v)
-            row.addStretch(1)
-            details.addLayout(row)
+            grid.addWidget(k, i, 0)
+            grid.addWidget(v, i, 1)
+        details.addLayout(grid)
         details.addStretch(1)
         pc.addLayout(details, 1)
         result_layout.addWidget(patient_card)
@@ -864,12 +861,7 @@ class MediTrackWindow(QMainWindow):
         self.meds_container = QWidget()
         self.meds_layout = QVBoxLayout(self.meds_container)
         self.meds_layout.setSpacing(10)
-        self.meds_layout.addStretch(1)
-        scroll_meds = QScrollArea()
-        scroll_meds.setWidgetResizable(True)
-        scroll_meds.setWidget(self.meds_container)
-        scroll_meds.setStyleSheet("border:none; background:transparent;")
-        mc.addWidget(scroll_meds, 1)
+        mc.addWidget(self.meds_container)
         mid_row.addWidget(meds_card, 1)
 
         rec_card = card_frame()
@@ -879,12 +871,7 @@ class MediTrackWindow(QMainWindow):
         self.records_container = QWidget()
         self.records_layout = QVBoxLayout(self.records_container)
         self.records_layout.setSpacing(10)
-        self.records_layout.addStretch(1)
-        scroll_recs = QScrollArea()
-        scroll_recs.setWidgetResizable(True)
-        scroll_recs.setWidget(self.records_container)
-        scroll_recs.setStyleSheet("border:none; background:transparent;")
-        rc.addWidget(scroll_recs, 1)
+        rc.addWidget(self.records_container)
         mid_row.addWidget(rec_card, 1)
 
         result_layout.addLayout(mid_row, 1)
@@ -1042,9 +1029,14 @@ class MediTrackWindow(QMainWindow):
             cl.setSpacing(4)
             name = QLabel(order["medication"])
             name.setStyleSheet("font-weight:700; font-size:16px; color:#142B4A;")
+            name.setWordWrap(True)
             cl.addWidget(name)
-            cl.addWidget(QLabel(f"Dose: {order['dose']}   |   Route: {order['route']}"))
-            cl.addWidget(QLabel(f"Schedule: {order['frequency']}"))
+            dose_lbl = QLabel(f"Dose: {order['dose']}   |   Route: {order['route']}")
+            dose_lbl.setWordWrap(True)
+            cl.addWidget(dose_lbl)
+            sched_lbl = QLabel(f"Schedule: {order['frequency']}")
+            sched_lbl.setWordWrap(True)
+            cl.addWidget(sched_lbl)
             badge = QLabel(status.upper())
             badge.setStyleSheet(f"background:{color}; color:white; border-radius:6px; padding:2px 8px; font-size:11px; font-weight:700;")
             badge.setAlignment(Qt.AlignCenter)
@@ -1071,8 +1063,12 @@ class MediTrackWindow(QMainWindow):
             title = QLabel(rtype)
             title.setStyleSheet("font-weight:700; font-size:16px; color:#2563EB;")
             cl.addWidget(title)
-            cl.addWidget(QLabel(r.get("note", "")))
-            cl.addWidget(QLabel(f"Date: {fmt_dt(r.get('recorded_at', ''))}"))
+            note_lbl = QLabel(r.get("note", ""))
+            note_lbl.setWordWrap(True)
+            cl.addWidget(note_lbl)
+            date_lbl = QLabel(f"Date: {fmt_dt(r.get('recorded_at', ''))}")
+            date_lbl.setWordWrap(True)
+            cl.addWidget(date_lbl)
             self.records_layout.addWidget(card)
         self.records_layout.addStretch(1)
 
