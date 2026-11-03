@@ -6,6 +6,7 @@ import Icon from '../components/Icon'
 
 export default function Patients() {
   const [patients, setPatients] = useState([])
+  const [tags, setTags] = useState([])
   const [doctors, setDoctors] = useState([])
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('All')
@@ -18,11 +19,13 @@ export default function Patients() {
   async function load() {
     setLoading(true)
     try {
-      const [{ data: p }, { data: u }] = await Promise.all([
+      const [{ data: p }, { data: u }, { data: t }] = await Promise.all([
         supabase.from('patients').select('*').order('id'),
         supabase.from('users').select('name, role').eq('status', 'Active'),
+        supabase.from('rfid_tags').select('patient_id, tag_token'),
       ])
       setPatients(p || [])
+      setTags(t || [])
       setDoctors((u || []).filter(x => /doctor|physician/i.test(x.role || '')))
     } finally {
       setLoading(false)
@@ -62,7 +65,8 @@ export default function Patients() {
 
   const statuses = ['All', 'Admitted', 'Outpatient', 'Discharged']
   const filtered = patients.filter(p => {
-    const matchSearch = (p.name + ' ' + p.patient_code).toLowerCase().includes(search.toLowerCase())
+    const patientTags = tags.filter(t => t.patient_id === p.id).map(t => t.tag_token).join(' ')
+    const matchSearch = (p.name + ' ' + p.patient_code + ' ' + patientTags).toLowerCase().includes(search.toLowerCase())
     const matchStatus = filter === 'All' || p.admission_status === filter
     return matchSearch && matchStatus
   })
