@@ -105,9 +105,6 @@ export default function Login({ onLogin }) {
             </button>
           </form>
 
-          <div className="auth-hint">
-            Default admin — username <b>admin</b> / password <b>admin123</b>
-          </div>
         </div>
       </main>
     </div>
