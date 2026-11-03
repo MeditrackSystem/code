@@ -8,7 +8,7 @@ export default function Patients() {
   const [patients, setPatients] = useState([])
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('All')
-  const [form, setForm] = useState({ patient_code: '', name: '', birth_date: '', room: '', bed: '', attending_physician: '', admission_status: 'Admitted' })
+  const [form, setForm] = useState({ patient_code: '', name: '', birth_date: '', room: '', bed: '', attending_physician: '', admission_status: 'Admitted', rfid_tag: '' })
   const [show, setShow] = useState(false)
   const [msg, setMsg] = useState('')
   const [saving, setSaving] = useState(false)
@@ -25,15 +25,30 @@ export default function Patients() {
   }
   useEffect(() => { load() }, [])
 
+  async function remove(id) {
+    if (!confirm('Delete this patient?')) return
+    setMsg('')
+    const { error: tagErr } = await supabase.from('rfid_tags').delete().eq('patient_id', id)
+    if (tagErr) { setMsg(tagErr.message); }
+    const { error } = await supabase.from('patients').delete().eq('id', id)
+    if (error) { setMsg(error.message); return }
+    await load()
+  }
+
   async function add(e) {
     if (e && e.preventDefault) e.preventDefault()
     setMsg('')
     setSaving(true)
     try {
-      const { error } = await supabase.from('patients').insert(form)
+      const { rfid_tag, ...patientForm } = form
+      const { data: newPatient, error } = await supabase.from('patients').insert(patientForm).select().single()
       if (error) { setMsg(error.message); return }
+      if (rfid_tag && rfid_tag.trim()) {
+        const { error: tagErr } = await supabase.from('rfid_tags').insert({ tag_token: rfid_tag.trim(), patient_id: newPatient.id, status: 'Active', assigned_at: new Date().toISOString() })
+        if (tagErr) { setMsg(tagErr.message); }
+      }
       setShow(false)
-      setForm({ patient_code: '', name: '', birth_date: '', room: '', bed: '', attending_physician: '', admission_status: 'Admitted' })
+      setForm({ patient_code: '', name: '', birth_date: '', room: '', bed: '', attending_physician: '', admission_status: 'Admitted', rfid_tag: '' })
       await load()
     } finally {
       setSaving(false)
@@ -109,6 +124,7 @@ export default function Patients() {
                     <option>Admitted</option><option>Outpatient</option><option>Discharged</option>
                   </select>
                 </div>
+                <div className="field"><label>RFID Tag (optional)</label><input className="input" value={form.rfid_tag} onChange={e => setForm({ ...form, rfid_tag: e.target.value })} placeholder="Tag token e.g. 2066071338" /></div>
               </div>
               {msg && <div className="alert alert-error" style={{ marginTop: 14 }}>{msg}</div>}
             </form>
@@ -164,7 +180,10 @@ export default function Patients() {
                   <td>{p.room} / {p.bed}</td>
                   <td>{p.attending_physician}</td>
                   <td><span className={'badge ' + (p.admission_status === 'Admitted' ? 'badge-blue' : p.admission_status === 'Outpatient' ? 'badge-amber' : 'badge-gray')}>{p.admission_status}</span></td>
-                  <td><Link className="btn btn-ghost btn-sm" to={`/patients/${p.id}`}>Open</Link></td>
+                  <td className="row" style={{ gap: 6 }}>
+                    <Link className="btn btn-ghost btn-sm" to={`/patients/${p.id}`}>Open</Link>
+                    <button className="btn btn-danger btn-sm" onClick={() => remove(p.id)}>Delete</button>
+                  </td>
                 </tr>
               ))}
             </tbody>
