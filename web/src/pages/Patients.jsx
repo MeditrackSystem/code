@@ -84,7 +84,7 @@ export default function Patients() {
         </div>
         <button className="btn btn-primary" onClick={() => {
           const next = patients.length + 1
-          setForm({ patient_code: `PAT-2026-${String(next).padStart(3, '0')}`, name: '', birth_date: '', room: '', bed: '', attending_physician: doctors[0]?.name || '', admission_status: 'Admitted', rfid_tag: '' })
+          setForm({ patient_code: `PAT-2026-${String(next).padStart(3, '0')}`, name: '', birth_date: '', room: '', bed: '', attending_physician: '', admission_status: 'Admitted', rfid_tag: '' })
           setShow(true)
         }}>
           <Icon name="plus" size={16} /> Add Patient
@@ -128,9 +128,10 @@ export default function Patients() {
                 <div className="field"><label>Room</label><input className="input" value={form.room} onChange={e => setForm({ ...form, room: e.target.value })} placeholder="201" /></div>
                 <div className="field"><label>Bed</label><input className="input" value={form.bed} onChange={e => setForm({ ...form, bed: e.target.value })} placeholder="A" /></div>
                 <div className="field"><label>Attending Physician</label>
-                  <select className="select" value={form.attending_physician} onChange={e => setForm({ ...form, attending_physician: e.target.value })}>
-                    {doctors.map(d => <option key={d.name} value={d.name}>{d.name}</option>)}
-                  </select>
+                  <input className="input" value={form.attending_physician} onChange={e => setForm({ ...form, attending_physician: e.target.value })} placeholder="Type a doctor name" list="physicians" />
+                  <datalist id="physicians">
+                    {doctors.slice(0, 5).map(d => <option key={d.name} value={d.name} />)}
+                  </datalist>
                 </div>
                 <div className="field"><label>Admission Status</label>
                   <select className="select" value={form.admission_status} onChange={e => setForm({ ...form, admission_status: e.target.value })}>
