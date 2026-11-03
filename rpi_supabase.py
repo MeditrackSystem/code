@@ -785,11 +785,6 @@ class MediTrackWindow(QMainWindow):
         self.current_user_label.setAlignment(Qt.AlignCenter)
         side.addWidget(self.current_user_label)
 
-        self.theme_btn = QPushButton("Dark Mode" if self.theme == "light" else "Light Mode")
-        self.theme_btn.setObjectName("secondary")
-        self.theme_btn.clicked.connect(self._toggle_theme)
-        side.addWidget(self.theme_btn)
-
         side.addWidget(self._section("Wireless Sensor"))
         toggle_row = QHBoxLayout()
         toggle_label = QLabel("Bluetooth")
@@ -819,6 +814,28 @@ class MediTrackWindow(QMainWindow):
         self.status_label = QLabel("Status: Bluetooth off")
         self.status_label.setStyleSheet("color:#2563EB; font-size:16px; font-weight:600;")
         side.addWidget(self.status_label)
+
+        # Theme toggle (same style as Bluetooth)
+        theme_row = QHBoxLayout()
+        theme_label = QLabel("Dark mode")
+        theme_label.setStyleSheet("font-size:16px; font-weight:600;")
+        theme_label.setCursor(Qt.PointingHandCursor)
+        theme_label.mousePressEvent = lambda e: self.theme_toggle.toggle()
+        theme_row.addWidget(theme_label)
+        touch_area2 = QWidget()
+        touch_area2.setFixedSize(80, 36)
+        touch_area2.setCursor(Qt.PointingHandCursor)
+        ta2 = QHBoxLayout(touch_area2)
+        ta2.setContentsMargins(12, 4, 12, 4)
+        self.theme_toggle = ToggleSwitch()
+        self.theme_toggle.setFixedSize(48, 24)
+        self.theme_toggle.setChecked(self.theme == "dark")
+        self.theme_toggle.toggled.connect(self._on_theme_toggle)
+        ta2.addWidget(self.theme_toggle, 0, Qt.AlignCenter)
+        touch_area2.mousePressEvent = lambda e: self.theme_toggle.toggle()
+        theme_row.addWidget(touch_area2)
+        theme_row.addStretch(1)
+        side.addLayout(theme_row)
 
         side.addStretch(1)
 
@@ -990,11 +1007,13 @@ class MediTrackWindow(QMainWindow):
                 self.worker = None
             self.status_label.setText("Status: Bluetooth off")
 
-    def _toggle_theme(self):
-        self.theme = "dark" if self.theme == "light" else "light"
+    def _on_theme_toggle(self, checked):
+        self.theme = "dark" if checked else "light"
         save_settings({"theme": self.theme})
         self.setStyleSheet(self._stylesheet(self.theme))
-        self.theme_btn.setText("Dark Mode" if self.theme == "light" else "Light Mode")
+
+    def _toggle_theme(self):
+        self.theme_toggle.setChecked(self.theme == "light")
 
     def current_user_id(self):
         return self.current_user.get("id", "")
