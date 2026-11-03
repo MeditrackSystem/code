@@ -645,6 +645,12 @@ class LoginDialog(QDialog):
         self.status.setStyleSheet("color:#DC2626; font-size:13px;")
         self.status.setAlignment(Qt.AlignCenter)
         cl.addWidget(self.status)
+
+        exit_btn = QPushButton("Exit")
+        exit_btn.setObjectName("secondary")
+        exit_btn.clicked.connect(self.reject)
+        cl.addWidget(exit_btn)
+
         cl.addStretch(1)
 
         row.addLayout(cl, 1)
@@ -866,7 +872,7 @@ class MediTrackWindow(QMainWindow):
 
         logout_btn = QPushButton("Logout")
         logout_btn.setObjectName("secondary")
-        logout_btn.clicked.connect(self.close)
+        logout_btn.clicked.connect(self._logout)
         side.addWidget(logout_btn)
 
         exit_btn = QPushButton("Exit")
@@ -1191,6 +1197,17 @@ class MediTrackWindow(QMainWindow):
             self.records_layout.addWidget(card)
         self.records_layout.addStretch(1)
 
+    def _logout(self):
+        self.hide()
+        login = LoginDialog()
+        if login.exec_() == QDialog.Accepted and login.user:
+            new_win = MediTrackWindow(current_user=login.user)
+            QApplication.instance()._main_window = new_win
+            new_win.showFullScreen()
+            self.close()
+        else:
+            QApplication.instance().quit()
+
     def back_to_front(self):
         self._current_uid = None
         self._current_reader_type = None
@@ -1316,6 +1333,7 @@ if __name__ == "__main__":
     threading.Thread(target=_sync_loop, daemon=True).start()
 
     app = QApplication(sys.argv)
+    app.setQuitOnLastWindowClosed(False)
     app.setFont(QFont("Segoe UI", 12))
     app.setStyleSheet("QWidget { font-family: 'Segoe UI', 'Inter', sans-serif; }")
 
