@@ -14,7 +14,6 @@ Features:
 import asyncio
 import csv
 import hashlib
-import json
 import os
 import threading
 
@@ -39,20 +38,8 @@ from PyQt5.QtWidgets import (
 )
 
 BASE_DIR = Path(__file__).resolve().parent
-SETTINGS_FILE = BASE_DIR / "settings.json"
+SETTINGS_PATH = BASE_DIR / "settings.json"
 DB_DIR = BASE_DIR / "database"
-
-def load_settings():
-    try:
-        return json.loads(SETTINGS_FILE.read_text(encoding="utf-8"))
-    except Exception:
-        return {}
-
-def save_settings(data):
-    try:
-        SETTINGS_FILE.write_text(json.dumps(data), encoding="utf-8")
-    except Exception:
-        pass
 IMG_DIR = BASE_DIR / "images"
 LOG_DIR = BASE_DIR / "logs"
 
@@ -293,6 +280,26 @@ def save_uid(uid):
             f.write(f"{datetime.now(timezone.utc).isoformat()}  {uid}\n")
     except Exception as e:
         print("log write failed:", e)
+
+
+# --------------------------- Settings ---------------------------
+import json as _json
+
+
+def load_settings():
+    try:
+        if SETTINGS_PATH.exists():
+            return _json.loads(SETTINGS_PATH.read_text(encoding="utf-8"))
+    except Exception:
+        pass
+    return {"theme": "light"}
+
+
+def save_settings(data):
+    try:
+        SETTINGS_PATH.write_text(_json.dumps(data, indent=2), encoding="utf-8")
+    except Exception as e:
+        print("save_settings failed:", e)
 
 
 # --------------------------- Card frame helper ---------------------------
@@ -641,7 +648,7 @@ class MediTrackWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("MediTrack")
         self.theme = load_settings().get("theme", "light")
-        self.setStyleSheet(self._stylesheet())
+        self.setStyleSheet(self._stylesheet(self.theme))
         self.showFullScreen()
 
         self.current_user = current_user or {}
@@ -668,8 +675,42 @@ class MediTrackWindow(QMainWindow):
             self.status_label.setText("Status: BLE not available")
             self.bt_toggle.setEnabled(False)
 
-    def _stylesheet(self):
-        base = """
+    def _stylesheet(self, theme=None):
+        theme = theme or getattr(self, "theme", "light")
+        if theme == "dark":
+            return """
+            QMainWindow { background: #0F172A; }
+            QLabel { color: #E2E8F0; font-size: 18px; }
+            QLabel#title { color: #F8FAFC; font-size: 28px; font-weight: 800; }
+            QLabel#subtitle { color: #94A3B8; font-size: 14px; }
+            QLabel#status { font-size: 16px; font-weight: 600; color: #60A5FA; }
+            QPushButton {
+                font-size: 18px; background: #2563EB; color: white;
+                border: none; border-radius: 10px; padding: 10px 20px;
+                font-weight: 600;
+            }
+            QPushButton:hover { background: #1D4ED8; }
+            QPushButton:pressed { background: #1E40AF; }
+            QPushButton:disabled { background: #475569; color: #CBD5E1; }
+            QPushButton#secondary {
+                background: #1E293B; color: #60A5FA; border: 1px solid #334155;
+            }
+            QPushButton#secondary:hover { background: #334155; }
+            QLineEdit {
+                border: 1px solid #334155; border-radius: 10px;
+                padding: 10px 12px; background: #1E293B; color: #F8FAFC; font-size: 18px;
+            }
+            QTextEdit {
+                background: #1E293B; border: 1px solid #334155;
+                border-radius: 10px; padding: 8px; font-size: 16px; color: #F8FAFC;
+            }
+            QFrame#card {
+                background: #1E293B; border: none;
+                border-radius: 14px;
+            }
+            QScrollArea { border: none; background: transparent; }
+            """
+        return """
         QMainWindow { background: #F4F7FB; }
         QLabel { color: #1E293B; font-size: 18px; }
         QLabel#title { color: #142B4A; font-size: 28px; font-weight: 800; }
@@ -701,23 +742,6 @@ class MediTrackWindow(QMainWindow):
         }
         QScrollArea { border: none; background: transparent; }
         """
-        if getattr(self, "theme", "light") == "dark":
-            for a, b in (
-                ("#F4F7FB", "#0F172A"),
-                ("#F5F7FB", "#0F172A"),
-                ("white", "#1E293B"),
-                ("#FFFFFF", "#1E293B"),
-                ("#142B4A", "#E2E8F0"),
-                ("#1E293B", "#E2E8F0"),
-                ("#374151", "#CBD5E1"),
-                ("#64748B", "#94A3B8"),
-                ("#E2E8F0", "#334155"),
-                ("#CBD5E1", "#475569"),
-                ("#F1F5F9", "#334155"),
-                ("#F8FAFC", "#334155"),
-            ):
-                base = base.replace(a, b)
-        return base
 
     def _build_ui(self):
         central = QWidget()
@@ -757,7 +781,7 @@ class MediTrackWindow(QMainWindow):
         self.current_user_label.setAlignment(Qt.AlignCenter)
         side.addWidget(self.current_user_label)
 
-        self.theme_btn = QPushButton("Theme: " + self.theme.capitalize())
+        self.theme_btn = QPushButton("Dark Mode" if self.theme == "light" else "Light Mode")
         self.theme_btn.setObjectName("secondary")
         self.theme_btn.clicked.connect(self._toggle_theme)
         side.addWidget(self.theme_btn)
@@ -957,6 +981,12 @@ class MediTrackWindow(QMainWindow):
                 self.worker = None
             self.status_label.setText("Status: Bluetooth off")
 
+    def _toggle_theme(self):
+        self.theme = "dark" if self.theme == "light" else "light"
+        save_settings({"theme": self.theme})
+        self.setStyleSheet(self._stylesheet(self.theme))
+        self.theme_btn.setText("Dark Mode" if self.theme == "light" else "Light Mode")
+
     def current_user_id(self):
         return self.current_user.get("id", "")
 
@@ -1128,12 +1158,6 @@ class MediTrackWindow(QMainWindow):
         bundle, msg = get_bundle(self._current_uid)
         if bundle is not None:
             self._display_bundle(bundle, self._current_reader_type, None)
-
-    def _toggle_theme(self):
-        self.theme = "dark" if self.theme == "light" else "light"
-        save_settings({"theme": self.theme})
-        self.setStyleSheet(self._stylesheet())
-        self.theme_btn.setText("Theme: " + self.theme.capitalize())
 
     def _set_photo(self, patient_id):
         if patient_id is None:
