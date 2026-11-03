@@ -545,10 +545,26 @@ class LoginDialog(QDialog):
         _theme = load_settings().get("theme", "light")
         _bg = "#0F172A" if _theme == "dark" else "#F4F7FB"
         _card_bg = "#1E293B" if _theme == "dark" else "white"
+        _input_bg = "#0F172A" if _theme == "dark" else "white"
+        _input_border = "#334155" if _theme == "dark" else "#CBD5E1"
+        _text = "#F8FAFC" if _theme == "dark" else "#1E293B"
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
         outer.setAlignment(Qt.AlignCenter)
-        self.setStyleSheet(f"QDialog {{ background: {_bg}; }}")
+        self.setStyleSheet(f"""
+            QDialog {{ background: {_bg}; }}
+            QFrame {{ background: {_card_bg}; border: none; border-radius: 16px; }}
+            QLabel {{ color: {_text}; }}
+            QLineEdit {{
+                border: 1px solid {_input_border}; border-radius: 10px;
+                padding: 10px 12px; background: {_input_bg}; color: {_text}; font-size: 18px;
+            }}
+            QPushButton {{
+                font-size: 18px; background: #2563EB; color: white;
+                border: none; border-radius: 10px; padding: 10px 20px; font-weight: 600;
+            }}
+            QPushButton:hover {{ background: #1D4ED8; }}
+        """)
         self._card_bg = _card_bg
 
         card = QFrame()
