@@ -594,12 +594,12 @@ class LoginDialog(QDialog):
             cl.addWidget(logo_lbl)
 
         title = QLabel("MediTrack")
-        title.setStyleSheet("font-size:30px; font-weight:800; color:#142B4A;")
+        title.setStyleSheet("font-size:30px; font-weight:800;")
         title.setAlignment(Qt.AlignCenter)
         cl.addWidget(title)
 
         sub = QLabel("Hospital Management System")
-        sub.setStyleSheet("font-size:14px; color:#64748B;")
+        sub.setStyleSheet("font-size:14px;")
         sub.setAlignment(Qt.AlignCenter)
         cl.addWidget(sub)
 
@@ -776,12 +776,12 @@ class MediTrackWindow(QMainWindow):
             side.addWidget(logo_img)
 
         app_title = QLabel("MediTrack")
-        app_title.setStyleSheet("font-size:20px; font-weight:700; color:#142B4A;")
+        app_title.setStyleSheet("font-size:20px; font-weight:700;")
         app_title.setAlignment(Qt.AlignCenter)
         side.addWidget(app_title)
 
         self.current_user_label = QLabel(self.current_user.get("name", "Unknown"))
-        self.current_user_label.setStyleSheet("font-size:14px; font-weight:600; color:#1E293B;")
+        self.current_user_label.setStyleSheet("font-size:14px; font-weight:600;")
         self.current_user_label.setAlignment(Qt.AlignCenter)
         side.addWidget(self.current_user_label)
 
@@ -887,7 +887,7 @@ class MediTrackWindow(QMainWindow):
         details = QVBoxLayout()
         details.setSpacing(10)
         self.name_label = QLabel("No patient loaded")
-        self.name_label.setStyleSheet("font-size:26px; font-weight:700; color:#142B4A;")
+        self.name_label.setStyleSheet("font-size:26px; font-weight:700;")
         details.addWidget(self.name_label)
 
         grid = QGridLayout()
@@ -897,9 +897,9 @@ class MediTrackWindow(QMainWindow):
         keys = ["Patient ID", "Room / Bed", "Physician", "RFID status", "Birth date"]
         for i, key in enumerate(keys):
             k = QLabel(f"{key}:")
-            k.setStyleSheet("font-weight:600; color:#374151; font-size:15px;")
+            k.setStyleSheet("font-weight:600; font-size:15px;")
             v = QLabel("-")
-            v.setStyleSheet("color:#1E293B; font-size:15px;")
+            v.setStyleSheet("font-size:15px;")
             v.setWordWrap(True)
             self.detail_labels[key] = v
             grid.addWidget(k, i, 0)
@@ -1093,11 +1093,11 @@ class MediTrackWindow(QMainWindow):
             admin_time = fmt_dt(admin["administered_at"]) if admin and admin["administered_at"] else "-"
             color = {"Given": "#16A34A", "Pending": "#F59E0B", "Missed": "#DC2626", "Held": "#F59E0B", "Refused": "#DC2626"}.get(status, "#64748B")
             card = QFrame()
-            card.setStyleSheet("background:#F8FAFC; border:none; border-radius:10px; padding:8px;")
+            card.setStyleSheet("border:none; border-radius:10px; padding:8px;")
             cl = QVBoxLayout(card)
             cl.setSpacing(4)
             name = QLabel(order["medication"])
-            name.setStyleSheet("font-weight:700; font-size:16px; color:#142B4A;")
+            name.setStyleSheet("font-weight:700; font-size:16px;")
             name.setWordWrap(True)
             cl.addWidget(name)
             dose_lbl = QLabel(f"Dose: {order['dose']}   |   Route: {order['route']}")
@@ -1126,11 +1126,11 @@ class MediTrackWindow(QMainWindow):
         for r in records:
             rtype = r.get("record_type", "Note")
             card = QFrame()
-            card.setStyleSheet("background:#F8FAFC; border:none; border-radius:10px; padding:8px;")
+            card.setStyleSheet("border:none; border-radius:10px; padding:8px;")
             cl = QVBoxLayout(card)
             cl.setSpacing(4)
             title = QLabel(rtype)
-            title.setStyleSheet("font-weight:700; font-size:16px; color:#2563EB;")
+            title.setStyleSheet("font-weight:700; font-size:16px;")
             cl.addWidget(title)
             note_lbl = QLabel(r.get("note", ""))
             note_lbl.setWordWrap(True)
