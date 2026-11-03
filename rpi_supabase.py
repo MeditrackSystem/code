@@ -483,11 +483,13 @@ class VirtualKeyboard(QWidget):
                     btn = QPushButton("Backspace")
                     btn.setFixedSize(96, 44)
                     btn.setFocusPolicy(Qt.NoFocus)
+                    btn.setStyleSheet("font-size:13px;")
                     btn.clicked.connect(self._backspace)
                 else:
                     btn = QPushButton(ch)
                     btn.setFixedSize(44, 44)
                     btn.setFocusPolicy(Qt.NoFocus)
+                    btn.setStyleSheet("font-size:15px; font-weight:600;")
                     btn.clicked.connect(lambda checked, x=ch: self._press(x))
                 hbox.addWidget(btn)
             outer.addLayout(hbox)
@@ -588,13 +590,15 @@ class LoginDialog(QDialog):
 
         # Left: on-screen keyboard
         kb_wrap = QVBoxLayout()
+        kb_wrap.setAlignment(Qt.AlignCenter)
         kb_label = QLabel("On-screen keyboard")
-        kb_label.setStyleSheet("font-size:14px; font-weight:600; color:#64748B;")
+        kb_label.setStyleSheet("font-size:14px; font-weight:600;")
         kb_label.setAlignment(Qt.AlignCenter)
         kb_wrap.addStretch(1)
         kb_wrap.addWidget(kb_label)
         self.keyboard = VirtualKeyboard(self, submit=self.try_login)
-        kb_wrap.addWidget(self.keyboard)
+        self.keyboard.setFixedWidth(520)
+        kb_wrap.addWidget(self.keyboard, 0, Qt.AlignCenter)
         kb_wrap.addStretch(1)
         row.addLayout(kb_wrap, 0)
 
