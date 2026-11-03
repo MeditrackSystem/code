@@ -788,7 +788,7 @@ class MediTrackWindow(QMainWindow):
         side.addWidget(self._section("Wireless Sensor"))
         toggle_row = QHBoxLayout()
         toggle_label = QLabel("Bluetooth")
-        toggle_label.setStyleSheet("font-size:16px; font-weight:600; color:#1E293B;")
+        toggle_label.setStyleSheet("font-size:16px; font-weight:600;")
         toggle_label.setCursor(Qt.PointingHandCursor)
         toggle_label.mousePressEvent = lambda e: self.bt_toggle.toggle()
         toggle_row.addWidget(toggle_label)
