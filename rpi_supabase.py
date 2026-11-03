@@ -892,7 +892,7 @@ class MediTrackWindow(QMainWindow):
 
         # Result page
         result = QWidget()
-        result.setStyleSheet("background: #F4F7FB;")
+        result.setStyleSheet("background: transparent;")
         result_layout = QVBoxLayout(result)
         result_layout.setContentsMargins(0, 0, 0, 0)
         result_layout.setSpacing(16)
@@ -966,6 +966,7 @@ class MediTrackWindow(QMainWindow):
         result_scroll.setWidgetResizable(True)
         result_scroll.setWidget(result)
         result_scroll.setStyleSheet("border:none; background:transparent;")
+        result_scroll.viewport().setStyleSheet("background:transparent;")
         result_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         result_scroll.verticalScrollBar().setStyleSheet("min-width: 18px;")
         result_scroll.viewport().setAttribute(Qt.WA_AcceptTouchEvents, True)
