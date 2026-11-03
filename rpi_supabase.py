@@ -840,19 +840,19 @@ class MediTrackWindow(QMainWindow):
 
         # Front / scan page
         front = QWidget()
-        front.setStyleSheet("background: #F4F7FB;")
+        front.setStyleSheet("background: transparent;")
         front_layout = QVBoxLayout(front)
         front_layout.setContentsMargins(40, 40, 40, 40)
         front_layout.setSpacing(20)
         front_layout.addStretch(1)
 
         front_title = QLabel("Ready to Scan")
-        front_title.setStyleSheet("font-size:36px; font-weight:700; color:#142B4A;")
+        front_title.setStyleSheet("font-size:36px; font-weight:700;")
         front_title.setAlignment(Qt.AlignCenter)
         front_layout.addWidget(front_title)
 
         front_sub = QLabel("Scan an RFID wristband to view patient information")
-        front_sub.setStyleSheet("font-size:18px; color:#64748B;")
+        front_sub.setStyleSheet("font-size:18px;")
         front_sub.setAlignment(Qt.AlignCenter)
         front_layout.addWidget(front_sub)
 
@@ -861,7 +861,7 @@ class MediTrackWindow(QMainWindow):
         front_layout.addWidget(self.scan_anim, 0, Qt.AlignCenter)
 
         self.front_status = QLabel("Waiting for scan...")
-        self.front_status.setStyleSheet("font-size:20px; font-weight:600; color:#2563EB;")
+        self.front_status.setStyleSheet("font-size:20px; font-weight:600;")
         self.front_status.setAlignment(Qt.AlignCenter)
         front_layout.addWidget(self.front_status)
 
