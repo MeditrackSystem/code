@@ -6,6 +6,7 @@ import Icon from '../components/Icon'
 
 export default function Patients() {
   const [patients, setPatients] = useState([])
+  const [doctors, setDoctors] = useState([])
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('All')
   const [form, setForm] = useState({ patient_code: '', name: '', birth_date: '', room: '', bed: '', attending_physician: '', admission_status: 'Admitted', rfid_tag: '' })
@@ -17,8 +18,12 @@ export default function Patients() {
   async function load() {
     setLoading(true)
     try {
-      const { data } = await supabase.from('patients').select('*').order('id')
-      setPatients(data || [])
+      const [{ data: p }, { data: u }] = await Promise.all([
+        supabase.from('patients').select('*').order('id'),
+        supabase.from('users').select('name, role').eq('status', 'Active'),
+      ])
+      setPatients(p || [])
+      setDoctors((u || []).filter(x => /doctor|physician/i.test(x.role || '')))
     } finally {
       setLoading(false)
     }
@@ -77,7 +82,11 @@ export default function Patients() {
           <h1 className="page-title">Patients</h1>
           <p className="page-subtitle">{patients.length} registered patient{patients.length === 1 ? '' : 's'} in the system.</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setShow(true)}>
+        <button className="btn btn-primary" onClick={() => {
+          const next = patients.length + 1
+          setForm({ patient_code: `PAT-2026-${String(next).padStart(3, '0')}`, name: '', birth_date: '', room: '', bed: '', attending_physician: doctors[0]?.name || '', admission_status: 'Admitted', rfid_tag: '' })
+          setShow(true)
+        }}>
           <Icon name="plus" size={16} /> Add Patient
         </button>
       </div>
@@ -118,7 +127,11 @@ export default function Patients() {
                 <div className="field"><label>Birth Date</label><input className="input" type="date" value={form.birth_date} onChange={e => setForm({ ...form, birth_date: e.target.value })} /></div>
                 <div className="field"><label>Room</label><input className="input" value={form.room} onChange={e => setForm({ ...form, room: e.target.value })} placeholder="201" /></div>
                 <div className="field"><label>Bed</label><input className="input" value={form.bed} onChange={e => setForm({ ...form, bed: e.target.value })} placeholder="A" /></div>
-                <div className="field"><label>Attending Physician</label><input className="input" value={form.attending_physician} onChange={e => setForm({ ...form, attending_physician: e.target.value })} placeholder="Dr. Maria Santos" /></div>
+                <div className="field"><label>Attending Physician</label>
+                  <select className="select" value={form.attending_physician} onChange={e => setForm({ ...form, attending_physician: e.target.value })}>
+                    {doctors.map(d => <option key={d.name} value={d.name}>{d.name}</option>)}
+                  </select>
+                </div>
                 <div className="field"><label>Admission Status</label>
                   <select className="select" value={form.admission_status} onChange={e => setForm({ ...form, admission_status: e.target.value })}>
                     <option>Admitted</option><option>Outpatient</option><option>Discharged</option>
