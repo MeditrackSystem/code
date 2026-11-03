@@ -19,12 +19,18 @@ export default function PatientDetail() {
   const [msg, setMsg] = useState('')
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [editOpen, setEditOpen] = useState(false)
+  const [editForm, setEditForm] = useState({ name: '', birth_date: '', room: '', bed: '', attending_physician: '', admission_status: 'Admitted' })
+  const [doctors, setDoctors] = useState([])
 
   async function load() {
     setLoading(true)
     try {
       const { data: p } = await supabase.from('patients').select('*').eq('id', id).single()
       setPatient(p)
+      if (p) setEditForm({ name: p.name || '', birth_date: p.birth_date || '', room: p.room || '', bed: p.bed || '', attending_physician: p.attending_physician || '', admission_status: p.admission_status || 'Admitted' })
+      const { data: u } = await supabase.from('users').select('name, role').eq('status', 'Active')
+      setDoctors((u || []).filter(x => /doctor|physician/i.test(x.role || '')))
       const { data: t } = await supabase.from('rfid_tags').select('*').eq('patient_id', id)
       setTags(t || [])
       const { data: o } = await supabase.from('medication_orders').select('*').eq('patient_id', id)
@@ -116,6 +122,20 @@ export default function PatientDetail() {
     }
   }
 
+  async function savePatient(e) {
+    if (e && e.preventDefault) e.preventDefault()
+    setSaving(true)
+    try {
+      const { error } = await supabase.from('patients').update(editForm).eq('id', id)
+      if (error) { setMsg(error.message); return }
+      setEditOpen(false)
+      setMsg('')
+      await load()
+    } finally {
+      setSaving(false)
+    }
+  }
+
   if (!patient) return <div className="card"><div className="empty">Loading patient…</div></div>
 
   const activeTag = tags.find(t => t.status === 'Active')
@@ -132,6 +152,7 @@ export default function PatientDetail() {
           <p className="page-subtitle mono">{patient.patient_code}</p>
         </div>
         <span className={'badge ' + (patient.admission_status === 'Admitted' ? 'badge-blue' : patient.admission_status === 'Outpatient' ? 'badge-amber' : 'badge-gray')}>{patient.admission_status}</span>
+        <button className="btn btn-primary btn-sm" onClick={() => setEditOpen(true)}>Edit Patient</button>
       </div>
 
       {msg && <div className="alert alert-error">{msg}</div>}
@@ -261,6 +282,42 @@ export default function PatientDetail() {
           ))}
         </div>
       </div>
+    {editOpen && (
+      <div className="modal-backdrop" onClick={() => setEditOpen(false)}>
+        <div className="modal" onClick={e => e.stopPropagation()}>
+          <div className="modal-head">
+            <div>
+              <h3>Edit Patient</h3>
+              <p>Update room, bed, physician and status.</p>
+            </div>
+            <button className="modal-close" onClick={() => setEditOpen(false)} aria-label="Close"><Icon name="x" size={16} /></button>
+          </div>
+          <form onSubmit={savePatient} className="modal-body">
+            <div className="form-grid">
+              <div className="field"><label>Name</label><input className="input" value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} required /></div>
+              <div className="field"><label>Birth Date</label><input className="input" type="date" value={editForm.birth_date} onChange={e => setEditForm({ ...editForm, birth_date: e.target.value })} /></div>
+              <div className="field"><label>Room</label><input className="input" value={editForm.room} onChange={e => setEditForm({ ...editForm, room: e.target.value })} /></div>
+              <div className="field"><label>Bed</label><input className="input" value={editForm.bed} onChange={e => setEditForm({ ...editForm, bed: e.target.value })} /></div>
+              <div className="field"><label>Attending Physician</label>
+                <select className="select" value={editForm.attending_physician} onChange={e => setEditForm({ ...editForm, attending_physician: e.target.value })}>
+                  {doctors.map(d => <option key={d.name} value={d.name}>{d.name}</option>)}
+                </select>
+              </div>
+              <div className="field"><label>Admission Status</label>
+                <select className="select" value={editForm.admission_status} onChange={e => setEditForm({ ...editForm, admission_status: e.target.value })}>
+                  <option>Admitted</option><option>Outpatient</option><option>Discharged</option>
+                </select>
+              </div>
+            </div>
+            {msg && <div className="alert alert-error" style={{ marginTop: 14 }}>{msg}</div>}
+          </form>
+          <div className="modal-foot">
+            <button type="button" className="btn btn-ghost" onClick={() => setEditOpen(false)}>Cancel</button>
+            <button type="submit" className="btn btn-success" onClick={savePatient} disabled={saving}>{saving ? 'Saving…' : 'Save Changes'}</button>
+          </div>
+        </div>
+      </div>
+    )}
     {(loading || saving) && (
       <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
         <div style={{ background: 'white', padding: '24px 32px', borderRadius: 12, boxShadow: '0 10px 30px rgba(0,0,0,0.2)', textAlign: 'center' }}>
