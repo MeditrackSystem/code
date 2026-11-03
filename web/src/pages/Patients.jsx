@@ -182,7 +182,7 @@ export default function Patients() {
                   <td><span className={'badge ' + (p.admission_status === 'Admitted' ? 'badge-blue' : p.admission_status === 'Outpatient' ? 'badge-amber' : 'badge-gray')}>{p.admission_status}</span></td>
                   <td className="row" style={{ gap: 6 }}>
                     <Link className="btn btn-ghost btn-sm" to={`/patients/${p.id}`}>Open</Link>
-                    <button className="btn btn-danger btn-sm" onClick={() => remove(p.id)}>Delete</button>
+                    <button className="btn btn-sm" style={{ background: '#dc2626', color: 'white' }} onClick={() => remove(p.id)}>Delete</button>
                   </td>
                 </tr>
               ))}
