@@ -869,6 +869,11 @@ class MediTrackWindow(QMainWindow):
         logout_btn.clicked.connect(self.close)
         side.addWidget(logout_btn)
 
+        exit_btn = QPushButton("Exit")
+        exit_btn.setObjectName("secondary")
+        exit_btn.clicked.connect(self.close)
+        side.addWidget(exit_btn)
+
         main_layout.addWidget(sidebar)
 
         divider = QFrame()
