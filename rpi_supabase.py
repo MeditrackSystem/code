@@ -756,7 +756,7 @@ class MediTrackWindow(QMainWindow):
 
         # ---------- Main content ----------
         main_wrapper = QWidget()
-        main_wrapper.setStyleSheet("background: #F4F7FB;")
+        main_wrapper.setStyleSheet("background: transparent;")
         main_layout = QHBoxLayout(main_wrapper)
         main_layout.setContentsMargins(24, 24, 24, 24)
         main_layout.setSpacing(24)
