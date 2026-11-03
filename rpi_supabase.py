@@ -834,6 +834,11 @@ class MediTrackWindow(QMainWindow):
 
         main_layout.addWidget(sidebar)
 
+        divider = QFrame()
+        divider.setFixedWidth(1)
+        divider.setStyleSheet("background: #CBD5E1;")
+        main_layout.addWidget(divider)
+
         # ---------- Stacked pages ----------
         self.stack = QStackedWidget()
         main_layout.addWidget(self.stack, 1)
