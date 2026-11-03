@@ -641,15 +641,15 @@ class LoginDialog(QDialog):
         login_btn.clicked.connect(self.try_login)
         cl.addWidget(login_btn)
 
-        self.status = QLabel("")
-        self.status.setStyleSheet("color:#DC2626; font-size:13px;")
-        self.status.setAlignment(Qt.AlignCenter)
-        cl.addWidget(self.status)
-
         exit_btn = QPushButton("Exit")
         exit_btn.setObjectName("secondary")
         exit_btn.clicked.connect(self.reject)
         cl.addWidget(exit_btn)
+
+        self.status = QLabel("")
+        self.status.setStyleSheet("color:#DC2626; font-size:13px;")
+        self.status.setAlignment(Qt.AlignCenter)
+        cl.addWidget(self.status)
 
         cl.addStretch(1)
 
