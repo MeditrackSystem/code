@@ -542,19 +542,23 @@ class LoginDialog(QDialog):
         self.setWindowState(Qt.WindowFullScreen)
         self.user = None
 
+        _theme = load_settings().get("theme", "light")
+        _bg = "#0F172A" if _theme == "dark" else "#F4F7FB"
+        _card_bg = "#1E293B" if _theme == "dark" else "white"
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
         outer.setAlignment(Qt.AlignCenter)
-        self.setStyleSheet("QDialog { background: #F4F7FB; }")
+        self.setStyleSheet(f"QDialog {{ background: {_bg}; }}")
+        self._card_bg = _card_bg
 
         card = QFrame()
         card.setFixedWidth(1120)
-        card.setStyleSheet("""
-            QFrame {
-                background: white;
+        card.setStyleSheet(f"""
+            QFrame {{
+                background: {self._card_bg};
                 border: none;
                 border-radius: 16px;
-            }
+            }}
         """)
         shadow = QGraphicsDropShadowEffect()
         shadow.setBlurRadius(30)
