@@ -48,7 +48,12 @@ export default function Users() {
         </div>
         <div className="row">
           <span className="badge badge-blue">{users.length} accounts</span>
-          <button className="btn btn-primary" onClick={() => setShow(true)}>
+          <button className="btn btn-primary" onClick={() => {
+            const next = users.length + 1
+            const eid = `U${String(next + 7).padStart(3, '0')}`
+            setForm({ employee_id: eid, name: '', username: '', password: '', role: 'Read-only staff', status: 'Active' })
+            setShow(true)
+          }}>
             <Icon name="plus" size={16} /> Create Account
           </button>
         </div>
@@ -88,7 +93,12 @@ export default function Users() {
             <form onSubmit={create} className="modal-body">
               <div className="form-grid">
                 <div className="field"><label>Employee ID</label><input className="input" value={form.employee_id} onChange={e => setForm({ ...form, employee_id: e.target.value })} placeholder="U008" /></div>
-                <div className="field"><label>Full Name</label><input className="input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Nurse Jane Doe" required /></div>
+                <div className="field"><label>Full Name</label><input className="input" value={form.name} onChange={e => {
+                  const name = e.target.value
+                  const slug = name.toLowerCase().replace(/[^a-z]/g, '')
+                  const suffix = users.length + 1
+                  setForm({ ...form, name, username: slug ? `${slug}${suffix}` : form.username })
+                }} placeholder="Nurse Jane Doe" required /></div>
                 <div className="field"><label>Username</label><input className="input" value={form.username} onChange={e => setForm({ ...form, username: e.target.value })} placeholder="jane.doe" required /></div>
                 <div className="field"><label>Password</label><input className="input" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} placeholder="Set a password" required /></div>
                 <div className="field"><label>Role</label>
