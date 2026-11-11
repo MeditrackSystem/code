@@ -178,6 +178,29 @@ export default function PatientDetail() {
         </div>
       </div>
 
+      <div className="card" style={{ marginTop: 16 }}>
+        <h3 className="card-title">Clinical Record</h3>
+        <p className="card-sub">Recorded notes and diagnoses.</p>
+        {records.length === 0 && (
+          <div className="empty-state">
+            <span className="ico"><Icon name="file" size={20} /></span>
+            <b>No clinical records</b>
+            <span>Notes, diagnoses and allergies will appear here in reverse-chronological order.</span>
+          </div>
+        )}
+        <div className="timeline" style={{ marginTop: 8 }}>
+          {records.map(r => (
+            <div key={r.id} className="timeline-item">
+              <div className="row" style={{ justifyContent: 'space-between' }}>
+                <span className="badge badge-blue">{r.record_type}</span>
+                <span className="muted">{formatDateTime(r.recorded_at)}</span>
+              </div>
+              <p style={{ margin: '10px 0 0', color: 'var(--text)' }}>{r.note}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div className="grid-2" style={{ marginTop: 16 }}>
         <div className="card">
           <h3 className="card-title">RFID Wristband</h3>
@@ -258,29 +281,6 @@ export default function PatientDetail() {
             </div>
           )
         })}
-      </div>
-
-      <div className="card" style={{ marginTop: 16 }}>
-        <h3 className="card-title">Clinical Timeline</h3>
-        <p className="card-sub">Recorded notes and diagnoses.</p>
-        {records.length === 0 && (
-          <div className="empty-state">
-            <span className="ico"><Icon name="file" size={20} /></span>
-            <b>No clinical records</b>
-            <span>Notes, diagnoses and allergies will appear here in reverse-chronological order.</span>
-          </div>
-        )}
-        <div className="timeline" style={{ marginTop: 8 }}>
-          {records.map(r => (
-            <div key={r.id} className="timeline-item">
-              <div className="row" style={{ justifyContent: 'space-between' }}>
-                <span className="badge badge-blue">{r.record_type}</span>
-                <span className="muted">{formatDateTime(r.recorded_at)}</span>
-              </div>
-              <p style={{ margin: '10px 0 0', color: 'var(--text)' }}>{r.note}</p>
-            </div>
-          ))}
-        </div>
       </div>
     {editOpen && (
       <div className="modal-backdrop" onClick={() => setEditOpen(false)}>
